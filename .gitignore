@@ -1,0 +1,18 @@
+# ignore pythom build files
+**build/
+**__pycache__
+**.c
+
+# ignore test files and folders
+
+# ignore testdata directory
+**test*/
+**test.*
+
+# ignore data directories
+**Data/
+**data/
+**DATA/
+
+# ignore egg-info directory
+**.egg-info/
