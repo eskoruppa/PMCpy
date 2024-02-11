@@ -1,5 +1,4 @@
-# REPO_TEMPLATE
-Template for repos
+# PMCpy
 
 Add Submodule
 ```console
