@@ -11,6 +11,7 @@ from .MCStep.midstepmove import MidstepMove
 from .MCStep.clustertranslation import ClusterTrans
 from .SO3 import so3
 
+
         
     
 
@@ -21,7 +22,7 @@ if __name__ == '__main__':
 
     np.set_printoptions(linewidth=250,precision=3,suppress=True)
 
-    npb  = 50
+    npb  = 1000
     closed = False
     conf = np.zeros((npb,4,4))
     gs = np.array([0,0,0.6,0,0,0.34])
@@ -52,7 +53,7 @@ if __name__ == '__main__':
         for move in moves:
             move.mc()
         
-        if i%1000==0:
+        if i%10000==0:
             print(f'step {i}: ')
             for move in moves:
                 print(f'{move.name}: {move.acceptance_rate()}')
@@ -63,9 +64,7 @@ if __name__ == '__main__':
     print(f'<E> / DoFs = {np.mean(Es)/(len(ch.conf)-1)/6}')   
     
     from .Dumps.xyz import write_xyz
-    
     types = ['C' for i in range(ch.nbp)]
     data = {'pos':confs, 'types':types}
-    
     write_xyz('conf.xyz',data)
     

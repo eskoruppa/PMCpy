@@ -2,6 +2,7 @@ import sys, os
 import numpy as np
 from typing import List, Tuple, Callable, Any, Dict
 from .pyConDec.pycondec import cond_jit
+from .SO3 import so3
 
 @cond_jit
 def random_unitsphere():
@@ -14,6 +15,16 @@ def random_unitsphere():
     vec[0]  *= np.cos(a)
     vec[1]  *= np.sin(a)
     return vec
+
+
+def params2conf(params: np.ndarray) -> np.ndarray:
+    conf = np.zeros((len(params),4,4))
+    conf[0] = np.eye(4)
+    for i in range(1,len(params)):
+        conf[i] = conf[i-1] @ so3.se3_euler2rotmat(params[i])
+    return conf
+
+    
     
 
         

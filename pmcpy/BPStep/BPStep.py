@@ -36,14 +36,18 @@ class BPStep(ABC):
         self.init_params()
         self.init_static()
         self.init_conf()
-        
+    
+    #########################################################################################
+    #########################################################################################    
     
     def init_conf(self) -> None:
         for id in range(self.nbps):
             self.propose_move(id,self.chain.conf[id],self.chain.conf[(id+1)%self.nbp])
         self.eval_delta_E()
         self.set_move(True)
-     
+    
+    #########################################################################################
+    ######################################################################################### 
             
     def propose_move(self, id: int, triad1: np.ndarray, triad2: np.ndarray) -> None:
         if self.static_group:
@@ -63,6 +67,9 @@ class BPStep(ABC):
         self.proposed_ids.append(id)
 
 
+    #########################################################################################
+    #########################################################################################
+
     def set_move(self, accept: bool = True) -> None:
         if accept:
             self.current_deforms = np.copy(self.proposed_deforms)
@@ -71,6 +78,8 @@ class BPStep(ABC):
         self.set_energy(accept)
         self.proposed_ids = []
     
+    #########################################################################################
+    #########################################################################################
     
     def init_static(self) -> None:
         if self.static_group:
@@ -80,6 +89,29 @@ class BPStep(ABC):
                 self.gs_mats[i]     = so3.se3_euler2rotmat(gs)
                 self.gs_mats_inv[i] = so3.se3_inverse(self.gs_mats[i])
     
+    #########################################################################################
+    #########################################################################################
+    
+    def check_deform_consistency(self) -> None:
+        consistent = True
+        for id in range(self.chain.nbp-1):
+            triad1 = self.chain.conf[id]
+            triad2 = self.chain.conf[id+1]
+            if self.static_group:
+                X = so3.se3_rotmat2euler(self.gs_mats_inv[id] @ so3.se3_triads2rotmat(triad1,triad2))
+            else:
+                X = so3.se3_rotmat2euler(so3.se3_triads2rotmat(triad1,triad2)) - self.gs_vecs[id]
+
+            if np.abs(np.sum(self.current_deforms[id]-X)) > 1e-12:
+                print('Inconsistent deformation:')
+                print(f' id:         {id}')
+                print(f' stored:     {self.current_deforms[id]}')
+                print(f' calculated: {X}')
+                consistent = False
+        return consistent
+        
+    #########################################################################################
+    #########################################################################################
            
     @abstractmethod
     def init_params(self) -> None:
@@ -101,4 +133,6 @@ class BPStep(ABC):
     def get_total_energy(self) -> float:
         pass
 
+    #########################################################################################
+    #########################################################################################
     

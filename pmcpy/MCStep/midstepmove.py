@@ -1,7 +1,6 @@
 import sys, os
 import numpy as np
 from typing import List, Tuple, Callable, Any, Dict
-from abc import ABC, abstractmethod
 from ..chain import Chain
 from ..BPStep.BPStep import BPStep
 from ..ExVol.ExVol import ExVol
@@ -48,12 +47,13 @@ class MidstepMove(MCStep):
         MCS_MST_MAX_TRANS = 0.015
         self.max_theta = MCS_MST_MAX_THETA*np.sqrt(self.chain.temp/300)
         self.max_trans = MCS_MST_MAX_TRANS*np.sqrt(self.chain.temp/300)
-        self.closed = self.closed
 
         self.requires_ev_check = True
         self.moved_intervals = np.zeros((1,3))
         self.moved_intervals[0,2] = 1000
-        
+    
+    #########################################################################################
+    #########################################################################################    
          
     def mc_move(self) -> bool:
 
@@ -119,9 +119,6 @@ class MidstepMove(MCStep):
                         
         return True
  
-        
-    
-
     
     
 if __name__ == '__main__':
@@ -152,11 +149,19 @@ if __name__ == '__main__':
     
     Es = []
     
+    import time
+    
+    t1 = time.time()
+    
     for i in range(100000):
         msm.mc()
         if i%1000==0:
             print(f'{i}: {msm.acceptance_rate()}')
             Es.append(bps.get_total_energy())
+            
+    t2 = time.time()
+    
+    print(f'dt = {t2-t1}')
     
     print(f'<E> / DoFs = {np.mean(Es)/(len(msm.chain.conf)-1)/6}')    
         

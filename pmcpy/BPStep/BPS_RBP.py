@@ -18,6 +18,8 @@ class RBP(BPStep):
         ):
         super().__init__(chain,sequence,specs,closed,static_group)
 
+    #########################################################################################
+    #########################################################################################
 
     def init_params(self) -> None:
         genstiff = GenStiffness(method = self.specs['method'])        
@@ -32,6 +34,9 @@ class RBP(BPStep):
             self.stiffmats[i] = genstiff.dimers[extseq[i:i+2]][self.specs['stiff_key']]
         self.current_energies  = np.zeros(self.nbps)
         self.proposed_energies = np.zeros(self.nbps)
+    
+    #########################################################################################
+    #########################################################################################
                     
     def eval_delta_E(self) -> float:
         dE = 0
@@ -41,12 +46,18 @@ class RBP(BPStep):
             dE += self.proposed_energies[id] - self.current_energies[id]
         return dE
     
+    #########################################################################################
+    #########################################################################################
+    
     def set_energy(self, accept: bool = True) -> None:
         if accept:
             self.current_energies = np.copy(self.proposed_energies)
         else:
             self.proposed_energies = np.copy(self.current_energies)
 
+    #########################################################################################
+    #########################################################################################
+    
     def get_total_energy(self) -> float:
         return np.sum(self.current_energies)
         

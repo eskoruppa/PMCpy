@@ -1,7 +1,6 @@
 import sys, os
 import numpy as np
 from typing import List, Tuple, Callable, Any, Dict
-from abc import ABC, abstractmethod
 from ..chain import Chain
 from ..BPStep.BPStep import BPStep
 from ..ExVol.ExVol import ExVol
@@ -21,7 +20,8 @@ class Crankshaft(MCStep):
         range_id1: int = None, 
         range_id2: int = None,
         full_trial_conf: bool = False,
-        exvol: ExVol = None
+        exvol: ExVol = None,
+        numba_tail_rotation: bool = True
         ):
         """
             Initiate:
@@ -36,12 +36,11 @@ class Crankshaft(MCStep):
             exvol=exvol
         )
         self.name = 'Crankshaft'
-        self.USE_NUMBA_SEGMENT_ROTATION = True
+        self.numba_tail_rotation = numba_tail_rotation
         
         
         MCS_CSROT_FAC = 0.25
         self.sigma = MCS_CSROT_FAC*np.sqrt(self.chain.temp/300) # *np.sqrt(disc_len/0.34);
-        self.closed = self.closed
 
         self.selrange_min = selrange_min
         self.selrange_max = selrange_max
@@ -77,7 +76,9 @@ class Crankshaft(MCStep):
         self.requires_ev_check = True
         self.moved_intervals = np.zeros((1,3))
         self.moved_intervals[0,2] = 1000
-        
+    
+    #########################################################################################
+    #########################################################################################    
          
     def mc_move(self) -> bool:
         
@@ -127,7 +128,7 @@ class Crankshaft(MCStep):
         self.bpstep.propose_move(idBn,TBn_rot,self.chain.conf[idB])
         
         # calculate energy
-        dE = self.bpstep.eval_delta_E()
+        dE = self.bpstep.eval_self.numba_tail_rotationdelta_E()
         
         # metropolis step
         if np.random.uniform() >= np.exp(-dE):
@@ -140,7 +141,7 @@ class Crankshaft(MCStep):
         self.chain.conf[idA]  = TA_rot
         self.chain.conf[idBn] = TBn_rot
         
-        if self.USE_NUMBA_SEGMENT_ROTATION:
+        if self.numba_tail_rotation:
             self.chain.conf = segment_rotation(self.chain.conf,Rlab,self.nbp,idA,hingedist)
         else:
             # rotate triads
@@ -160,7 +161,8 @@ class Crankshaft(MCStep):
                         
         return True
  
-        
+    #########################################################################################
+    #########################################################################################        
     
 @cond_jit
 def segment_rotation(
@@ -170,7 +172,7 @@ def segment_rotation(
     idA: int,
     hingedist: int,
     ) -> np.ndarray:
-    # conf[np.arange(idA+1,idA+hingedist-1)%nbp,:3,:3] = Rlab @ conf[np.arange(idA+1,idA+hingedist-1)%nbp,:3,:3]
+    
     # move positions
     rotated_vecs = np.zeros((hingedist-2,3))
     id = idA%nbp
@@ -178,9 +180,7 @@ def segment_rotation(
         idm1 = id
         id   = (id+1)%nbp
         rotated_vecs[i] = Rlab @ (conf[id,:3,3] - conf[idm1,:3,3])
-    
-    # vecs = conf[np.arange(idA+1,idA+hingedist-1)%nbp,:3,3] - conf[np.arange(idA,idA+hingedist-2)%nbp,:3,3]
-    # rotated_vecs = (Rlab @ vecs.T).T
+        
     id = idA%nbp
     for i in range(hingedist-2):            
         idm1 = id

@@ -1,6 +1,7 @@
 import sys, os
 import numpy as np
 from typing import List, Tuple, Callable, Any, Dict
+from .SO3 import so3
 
 
 class Chain:
@@ -28,7 +29,6 @@ class Chain:
         if not self.closed:
             self.nbps -= 1
 
-
     
     def set_conf(self, conf: np.ndarray) -> None:
         self.conf = conf
@@ -40,6 +40,14 @@ class Chain:
                 self.backup_conf = np.copy(self.conf)
             else:
                 self.backup_conf = np.copy(conf) 
+           
+    def realign_triads(self):
+        for i in range(self.nbp):
+            self.conf[i] = so3.se3_euler2rotmat(so3.se3_rotmat2euler(self.conf[i]))
+            
+
+        
+        
      
         
     
