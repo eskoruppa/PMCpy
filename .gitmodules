@@ -4,3 +4,6 @@
 [submodule "pmcpy/BPStep/RBPStiff"]
 	path = pmcpy/BPStep/RBPStiff
 	url = git@github.com:eskoruppa/RBPStiff
+[submodule "pmcpy/pyConDec"]
+	path = pmcpy/pyConDec
+	url = git@github.com:eskoruppa/pyConDec

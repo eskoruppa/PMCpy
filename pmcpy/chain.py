@@ -8,6 +8,7 @@ class Chain:
     def __init__(
         self, 
         configuration: np.ndarray,
+        closed: bool = False,
         keep_backup: bool = False
         ):
         """
@@ -18,8 +19,14 @@ class Chain:
         """
         
         self.conf = configuration
+        self.closed = closed
         self.keep_backup = keep_backup
+        self.temp = 300
         
+        self.nbp = len(self.conf)
+        self.nbps = self.nbp
+        if not self.closed:
+            self.nbps -= 1
 
 
     

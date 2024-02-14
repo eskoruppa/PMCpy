@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from ..chain import Chain
 from ..BPStep.BPStep import BPStep
 from ..ExVol.ExVol import ExVol
-
 from ..SO3 import so3
 
 class MCStep(ABC):
@@ -15,7 +14,6 @@ class MCStep(ABC):
         chain: Chain, 
         bpstep: BPStep, 
         full_trial_conf: bool = False,
-        requires_ev_check: bool = True,
         exvol: ExVol = None
         ):
         """
@@ -24,8 +22,14 @@ class MCStep(ABC):
                 - energy model (separate object passed to chain)
         
         """
+        self.name = 'MCStep'
+        
         self.chain  = chain
         self.bpstep = bpstep
+        
+        self.nbp    = self.chain.nbp
+        self.nbps   = self.chain.nbps
+        self.closed = self.chain.closed
         
         self.full_trial_conf = full_trial_conf
         
@@ -39,9 +43,12 @@ class MCStep(ABC):
         self.backup_required = False
         
         # excluded volume
-        self.ev_active = False
-        self.requires_ev_check = requires_ev_check
         self.exvol = exvol
+        self.requires_ev_check = False
+        if exvol is None:
+            self.ev_active = False
+        else:
+            self.ev_active = True
         
         # constraints
         self.constraint_active = False
@@ -59,7 +66,7 @@ class MCStep(ABC):
         else:
             accepted = self.mc_move()
             if accepted:
-                if self.constraints_active:
+                if self.constraint_active:
                     accepted = self.check_constraints()
 
                 if accepted and self.ev_active and self.requires_ev_check:
@@ -79,14 +86,17 @@ class MCStep(ABC):
             if not constraint.check():
                 return False
         return True
+    
+    def acceptance_rate(self) -> float:
+        return self.count_accept/self.count_steps
             
     @abstractmethod   
     def mc_move(self) -> bool:
         pass
 
-    @abstractmethod   
-    def gen_trial_conf(self) -> float:
-        pass
+    # @abstractmethod   
+    # def gen_trial_conf(self) -> float:
+    #     pass
     
 
     

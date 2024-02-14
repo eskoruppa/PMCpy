@@ -36,11 +36,9 @@ class RBP(BPStep):
     def eval_delta_E(self) -> float:
         dE = 0
         for id in self.proposed_ids:
-            print(id)
             self.proposed_energies[id] = \
                 0.5 * self.proposed_deforms[id].T @ self.stiffmats[id] @ self.proposed_deforms[id]  
             dE += self.proposed_energies[id] - self.current_energies[id]
-            print(self.proposed_energies[id] - self.current_energies[id])
         return dE
     
     def set_energy(self, accept: bool = True) -> None:
@@ -49,7 +47,8 @@ class RBP(BPStep):
         else:
             self.proposed_energies = np.copy(self.current_energies)
 
-        
+    def get_total_energy(self) -> float:
+        return np.sum(self.current_energies)
         
     
     
