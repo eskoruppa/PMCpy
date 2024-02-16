@@ -46,7 +46,6 @@ if __name__ == '__main__':
     # moves.append(ClusterTrans(ch,bps,2,25))
     
     Es = []
-    
     confs = []
     confs.append(np.copy(ch.conf[:,:3,3]))
     
