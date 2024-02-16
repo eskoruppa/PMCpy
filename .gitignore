@@ -18,6 +18,3 @@
 
 # ignore .xyz files
 **.xyz
-
-# ignore apps folder for now
-**apps/
