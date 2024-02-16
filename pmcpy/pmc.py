@@ -8,6 +8,7 @@ from .ExVol.ExVol import ExVol
 from .MCStep.singletriad import SingleTriad
 from .MCStep.crankshaft import Crankshaft
 from .MCStep.midstepmove import MidstepMove
+from .MCStep.pivot import Pivot
 from .MCStep.clustertranslation import ClusterTrans
 from .SO3 import so3
 
@@ -22,7 +23,7 @@ if __name__ == '__main__':
 
     np.set_printoptions(linewidth=250,precision=3,suppress=True)
 
-    npb  = 1000
+    npb  = 100
     closed = False
     conf = np.zeros((npb,4,4))
     gs = np.array([0,0,0.6,0,0,0.34])
@@ -39,21 +40,23 @@ if __name__ == '__main__':
     bps = RBP(ch,seq,specs,closed=closed,static_group=True)    
 
     moves = list()
+    moves.append(Pivot(ch,bps,selection_limit_id=50,rotate_end=True))
 
-    moves.append(Crankshaft(ch,bps,2,25))
-    moves.append(SingleTriad(ch,bps))
-    moves.append(ClusterTrans(ch,bps,2,25))
+
+    # moves.append(Crankshaft(ch,bps,2,25))
+    # moves.append(SingleTriad(ch,bps))
+    # moves.append(ClusterTrans(ch,bps,2,25))
     
     Es = []
     
     confs = []
     confs.append(np.copy(ch.conf[:,:3,3]))
     
-    for i in range(1000000):
+    for i in range(10000):
         for move in moves:
             move.mc()
         
-        if i%10000==0:
+        if i%100==0:
             print(f'step {i}: ')
             for move in moves:
                 print(f'{move.name}: {move.acceptance_rate()}')

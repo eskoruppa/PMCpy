@@ -147,7 +147,7 @@ if __name__ == '__main__':
     
     print(f'<E> / DoFs = {np.mean(Es)/(len(conf)-1)/6}')    
     types = ['C' for i in range(chain.nbp)]
-    types[-2] = 'O'
+    # types[-2] = 'O'
     data = {'pos':confs, 'types':types}
     write_xyz('nuc.xyz',data)
     
