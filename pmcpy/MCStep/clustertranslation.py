@@ -56,9 +56,9 @@ class ClusterTrans(MCStep):
         self.restricted_range = False
         if range_id1 is not None or range_id2 is not None:
             if range_id1 is None or range_id2 is None:
-                raise ValueError(f'Crankshaft: range limit requires both range_id1 and range_id2 to be set.')
+                raise ValueError(f'ClusterTrans: range limit requires both range_id1 and range_id2 to be set.')
             if not self.closed and range_id1 >= range_id2:
-                raise ValueError(f'Crankshaft: requires range_id1 < range_id2 if chain is not closed.')
+                raise ValueError(f'ClusterTrans: requires range_id1 < range_id2 if chain is not closed.')
             range_id2 += 1
             if not self.closed and range_id1 == 0:
                 range_id1 = 1
@@ -70,6 +70,9 @@ class ClusterTrans(MCStep):
             
             self.restricted_range = True
             self.range_id1_upper = self.range_id2 - self.selrange_min
+            if self.range_id1_upper <= self.range_id1:
+                raise ValueError(f'ClusterTrans: range {self.range_id1} - {self.range_id2} too close for min range {self.selrange_min}.')
+            
                 
         self.requires_ev_check = True
         self.moved_intervals = np.zeros((1,3))

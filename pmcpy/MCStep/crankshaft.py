@@ -72,7 +72,9 @@ class Crankshaft(MCStep):
             
             self.restricted_range = True
             self.range_id1_upper = self.range_id2 - self.selrange_min
-                
+            if self.range_id1_upper <= self.range_id1:
+                raise ValueError(f'Crankshaft: range {self.range_id1} - {self.range_id2} too close for min range {self.selrange_min}.')
+            
         self.requires_ev_check = True
         self.moved_intervals = np.zeros((1,3))
         self.moved_intervals[0,2] = 1000
@@ -85,7 +87,7 @@ class Crankshaft(MCStep):
         #############################
         # select hinges
         if self.restricted_range:
-            idA = np.random.randint(self.range_id1,self.range_id1_upper)
+            idA = np.random.randint(self.range_id1,self.range_id1_upper)                
             dist = self.range_id2 - idA
             if dist > self.selrange_max:
                 hingedist = np.random.randint(self.selrange_min,self.selrange_max)
@@ -128,7 +130,7 @@ class Crankshaft(MCStep):
         self.bpstep.propose_move(idBn,TBn_rot,self.chain.conf[idB])
         
         # calculate energy
-        dE = self.bpstep.eval_self.numba_tail_rotationdelta_E()
+        dE = self.bpstep.eval_delta_E()
         
         # metropolis step
         if np.random.uniform() >= np.exp(-dE):

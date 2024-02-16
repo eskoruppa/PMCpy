@@ -54,15 +54,6 @@ class BPStep(ABC):
             X = so3.se3_rotmat2euler(self.gs_mats_inv[id] @ so3.se3_triads2rotmat(triad1,triad2))
         else:
             X = so3.se3_rotmat2euler(so3.se3_triads2rotmat(triad1,triad2)) - self.gs_vecs[id]
-        
-        # print('-----------------')
-        # print(np.sum(self.current_deforms[id]-X))
-        # print('-----------------')
-        
-        # print('-----------------')
-        # print(self.current_deforms[id])
-        # print(X)
-        # print('-----------------')
         self.proposed_deforms[id] = X
         self.proposed_ids.append(id)
 

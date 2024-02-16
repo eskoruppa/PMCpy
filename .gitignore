@@ -4,7 +4,6 @@
 **.c
 
 # ignore test files and folders
-
 # ignore testdata directory
 **test*/
 **test.*
@@ -16,3 +15,9 @@
 
 # ignore egg-info directory
 **.egg-info/
+
+# ignore .xyz files
+**.xyz
+
+# ignore apps folder for now
+**apps/
