@@ -41,8 +41,6 @@ if __name__ == '__main__':
 
     moves = list()
     moves.append(Pivot(ch,bps,selection_limit_id=50,rotate_end=True))
-
-
     # moves.append(Crankshaft(ch,bps,2,25))
     # moves.append(SingleTriad(ch,bps))
     # moves.append(ClusterTrans(ch,bps,2,25))
