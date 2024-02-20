@@ -29,7 +29,8 @@ def equilibrate(
     num_cycles: int = None,
     # fixed_positions: List[int] = None,
     exvol_rad: float = 0,
-    model: str = 'lankas'
+    model: str = 'lankas',
+    dump_every: int = None,
     ) -> Dict:
     """_summary_
 
@@ -92,7 +93,7 @@ def equilibrate(
         if len(fixed) == 0:
             # add crankshaft
             cs = Crankshaft(chain,bps,2,N//2,exvol=exvol)            
-            ct = ClusterTrans(chain,bps,N//2,exvol=exvol)
+            ct = ClusterTrans(chain,bps,2, N//2,exvol=exvol)
             moves += [cs,ct]
         else:
             # add crankshaft moves on intervals
@@ -145,22 +146,71 @@ def equilibrate(
                     
     #############################
     # simulation loop
-    if num_cycles is None:
-        num_cycles = N*50
-    
     confs = []
     confs.append(np.copy(chain.conf[:,:3,3]))
+    energies = []
+    energies.append(bps.get_total_energy())
     
-    print(f'{len(moves)} moves initated')
-    
-    for cyc in range(num_cycles):
-        for move in moves:
-            move.mc()
+    if num_cycles is not None:
+        for cyc in range(num_cycles):
+            for move in moves:
+                move.mc()
+            
+            if cyc%10==0:
+                energies.append(bps.get_total_energy())
+            if dump_every is not None and cyc%dump_every==0:
+                confs.append(np.copy(chain.conf[:,:3,3]))
+            if cyc%1000==0: 
+                print(f'cycle {cyc}: ')
+                
+    else:
+        cycles_per_eval = 10
+        evals_per_average = 50
         
-        if cyc%100==0:
-            confs.append(np.copy(chain.conf[:,:3,3]))
-        if cyc%1000==0: 
-            print(f'cycle {cyc}: ')
+        for cyc in range(cycles_per_eval*evals_per_average*2):
+            for move in moves:
+                move.mc()
+            if cyc%cycles_per_eval==0:
+                energies.append(bps.get_total_energy())
+            if dump_every is not None and cyc%dump_every==0:
+                confs.append(np.copy(chain.conf[:,:3,3]))
+        
+        Em1 = np.mean(energies[:evals_per_average])
+        Em2 = np.mean(energies[evals_per_average:])
+        equi_down = Em1 > Em2
+        
+        print(f'E = {Em1} kT')
+        print(f'E = {Em2} kT')
+        
+        cyc = 0
+        
+        equilibrated = False
+        while not equilibrated:
+            # equilibration check
+            for eval in range(evals_per_average):
+                for c in range(evals_per_average):
+                    cyc += 1
+                    for move in moves:
+                        move.mc()
+                    if cyc%100==0:
+                        confs.append(np.copy(chain.conf[:,:3,3]))
+                     
+                energies.append(bps.get_total_energy())
+            
+            Em1 = Em2
+            Em2 = np.mean(energies[-evals_per_average:])
+            
+            print(f'E = {Em2} kT')
+            if equi_down:
+                if Em2 > Em1:
+                    equilibrated = True
+                    break
+            else:
+                if Em2 < Em1:
+                    equilibrated = True
+                    break
+                    
+    print(f'{len(moves)} moves initated')
             
     out = {
         'positions' : chain.conf[:,:3,3],
@@ -180,7 +230,7 @@ if __name__ == '__main__':
 
     npb  = 100
     closed = False
-    endpoints_fixed = True
+    endpoints_fixed = False
     fixed = []
     temp = 300
     
@@ -198,18 +248,16 @@ if __name__ == '__main__':
     pos    = conf[:,:3,3]
 
     print('first')
-    out = equilibrate(triads,pos,seq,closed=closed,endpoints_fixed=False,fixed=[],temp=100000,num_cycles=100)
+    out = equilibrate(triads,pos,seq,closed=False,endpoints_fixed=False,fixed=[],temp=100000,num_cycles=100)
 
-    fixed = [10,20,30,70]
-
-    fixed_pos1 = np.copy(out['positions'][fixed])
+    # fixed = [10,20,30,70]
+    # fixed_pos1 = np.copy(out['positions'][fixed])
 
     print('second')
     out = equilibrate(out['triads'],out['positions'],seq,closed=closed,endpoints_fixed=endpoints_fixed,fixed=fixed,temp=300)
 
-    fixed_pos2 = np.copy(out['positions'][fixed])
-    
-    print(fixed_pos2-fixed_pos1)
+    # fixed_pos2 = np.copy(out['positions'][fixed])
+    # print(fixed_pos2-fixed_pos1)
 
     from ..Dumps.xyz import write_xyz
     types = ['C' for i in range(len(conf))]
