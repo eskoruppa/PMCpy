@@ -48,8 +48,17 @@ class Chain:
 
         
         
-     
-        
+
+def se3_triads(triads: np.ndarray, positions: np.ndarray):
+    if len(positions) != len(triads):
+        raise ValueError(f'Mismatched dimensions of positions ({positions.shape}) and triads ({triads.shape}).')
+
+    conf = np.zeros((len(positions),4,4))
+    conf[:,:3,:3] = triads
+    conf[:,:3,3]  = positions
+    conf[:,3,3]   = 1
+    return conf
+    
     
 
         

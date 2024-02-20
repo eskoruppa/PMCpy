@@ -15,13 +15,17 @@ class RBP(BPStep):
         specs: Dict,
         closed: bool = False,
         static_group: bool = True,
+        temp: float = 300
         ):
-        super().__init__(chain,sequence,specs,closed,static_group)
+        # set reference temperature for dataset
+        super().__init__(chain,sequence,specs,closed,static_group,temp=temp)
+        
 
     #########################################################################################
     #########################################################################################
 
     def init_params(self) -> None:
+        self.temp = 300
         genstiff = GenStiffness(method = self.specs['method'])        
         self.stiffmats = np.zeros((self.nbps,6,6))
         self.gs_vecs   = np.zeros((self.nbps,6))
@@ -60,6 +64,15 @@ class RBP(BPStep):
     
     def get_total_energy(self) -> float:
         return np.sum(self.current_energies)
+    
+    #########################################################################################
+    #########################################################################################
+    
+    def set_temperature(self, temp: float) -> None:
+        self.stiffmats *= self.temp / temp
+        self.temp = temp
+        self.init_conf()
+        
         
     
     

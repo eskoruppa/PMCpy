@@ -10,6 +10,7 @@ from .MCStep.pivot import Pivot
 from .MCStep.singletriad import SingleTriad
 from .Dumps.xyz import read_xyz, write_xyz, load_xyz
 
+from .run.equilibrate import equilibrate
 from .aux import params2conf
 from .aux import random_unitsphere
 from .SO3 import so3

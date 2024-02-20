@@ -40,8 +40,16 @@ if __name__ == '__main__':
     bps = RBP(ch,seq,specs,closed=closed,static_group=True)    
 
     moves = list()
-    moves.append(Pivot(ch,bps,selection_limit_id=50,rotate_end=True))
-    # moves.append(Crankshaft(ch,bps,2,25))
+    moves.append(Pivot(ch,bps))
+    
+    for i in range(1000):
+        for move in moves:
+            move.mc()
+    
+    moves = list()
+    moves.append(Crankshaft(ch,bps,2,50))
+    
+    
     # moves.append(SingleTriad(ch,bps))
     # moves.append(ClusterTrans(ch,bps,2,25))
     
@@ -49,11 +57,11 @@ if __name__ == '__main__':
     confs = []
     confs.append(np.copy(ch.conf[:,:3,3]))
     
-    for i in range(10000):
+    for i in range(100000):
         for move in moves:
             move.mc()
         
-        if i%100==0:
+        if i%1000==0:
             print(f'step {i}: ')
             for move in moves:
                 print(f'{move.name}: {move.acceptance_rate()}')

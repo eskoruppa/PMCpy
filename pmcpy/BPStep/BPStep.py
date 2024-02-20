@@ -14,7 +14,8 @@ class BPStep(ABC):
         sequence: str, 
         specs: Dict,
         closed: bool = False,
-        static_group: bool = True
+        static_group: bool = True,
+        temp: float = 300
         ):
         
         self.chain = chain
@@ -22,6 +23,7 @@ class BPStep(ABC):
         self.specs = specs
         self.closed = closed
         self.static_group = static_group
+        self.temp = 300
         
         self.nbp = len(chain.conf)
         if closed:
@@ -35,7 +37,9 @@ class BPStep(ABC):
         
         self.init_params()
         self.init_static()
-        self.init_conf()
+        self.set_temperature(temp)
+        # init_conf is called in set_temperature
+        # self.init_conf()
     
     #########################################################################################
     #########################################################################################    
@@ -123,6 +127,11 @@ class BPStep(ABC):
     @abstractmethod
     def get_total_energy(self) -> float:
         pass
+    
+    @abstractmethod
+    def set_temperature(self, temp: float) -> None:
+        pass
+    
 
     #########################################################################################
     #########################################################################################
