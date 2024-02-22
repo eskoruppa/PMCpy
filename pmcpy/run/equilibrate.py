@@ -1,37 +1,37 @@
-import sys, os
+import os
+import sys
+from typing import Any, Callable, Dict, List, Tuple
+
 import numpy as np
-from typing import List, Tuple, Callable, Any, Dict
-
-from ..chain import Chain, se3_triads
-from .model_selection import init_bps
-
 
 from ..BPStep.BPStep import BPStep
+from ..chain import Chain, se3_triads
 from ..ExVol.ExVol import ExVol
-
-
-from ..MCStep.singletriad import SingleTriad
+from ..MCStep.clustertranslation import ClusterTrans
 from ..MCStep.crankshaft import Crankshaft
 from ..MCStep.midstepmove import MidstepMove
 from ..MCStep.pivot import Pivot
-from ..MCStep.clustertranslation import ClusterTrans
+from ..MCStep.singletriad import SingleTriad
 from ..SO3 import so3
+from .model_selection import init_bps
 
 
 def equilibrate(
-    triads: np.ndarray, 
-    positions: np.ndarray, 
+    triads: np.ndarray,
+    positions: np.ndarray,
     sequence: str,
     closed: bool = False,
     endpoints_fixed: bool = True,
-    fixed: List[int] = [], 
-    temp: float = 300, 
+    fixed: List[int] = [],
+    temp: float = 300,
     num_cycles: int = None,
     # fixed_positions: List[int] = None,
     exvol_rad: float = 0,
-    model: str = 'lankas',
+    model: str = "lankas",
     dump_every: int = None,
-    ) -> Dict:
+    cycles_per_eval: int = 20,
+    evals_per_average: int = 25,
+) -> Dict:
     """_summary_
 
     Args:
@@ -45,145 +45,166 @@ def equilibrate(
         num_cycles (int, optional): _description_. Defaults to None.
         exvol_rad (float, optional): _description_. Defaults to 0.
         model (str, optional): _description_. Defaults to 'lankas'.
-    
+        dump_every (int, optional): _description_. Defaults to None.
+        cycles_per_eval (int, optional): _description_. Defaults to 20.
+        evals_per_average (int, optional): _description_. Defaults to 25.
+
+    Returns:
+        Dict: _description_
+
     TODO:
         - assess convergence of energy
     """
-    
-    
+
     exvol_active = False
     keep_backup = False
     exvol = None
     if exvol_rad > 0:
         exvol_active = True
-        keep_backup  = True
-        print('Warning: Excluded volume interactions not yet implemented!')
-        
-    
+        keep_backup = True
+        print("Warning: Excluded volume interactions not yet implemented!")
+
     #############################
     # init configuration chain and energy
-    conf  = se3_triads(triads,positions)
-    chain = Chain(conf,closed=closed,keep_backup=keep_backup)
-    bps   = init_bps(model,chain,sequence,closed=closed,temp=temp)
+    conf = se3_triads(triads, positions)
+    chain = Chain(conf, closed=closed, keep_backup=keep_backup)
+    bps = init_bps(model, chain, sequence, closed=closed, temp=temp)
     N = len(conf)
-    
-    
-    
+
     #############################
-    # init moves
-    moves = list()
-    
+    # set fixed and free points
     if endpoints_fixed:
         if 0 not in fixed:
             fixed = [0] + fixed
-        if N-1 not in fixed:
-            fixed += [N-1]
-    
-    bpids = [i for i in range(N)]   
+        if N - 1 not in fixed:
+            fixed += [N - 1]
+    bpids = [i for i in range(N)]
     free = [i for i in bpids if i not in fixed]
-        
+
+    #############################
+    # init moves
+    moves = list()
+
     # add single triad moves:
-    single = SingleTriad(chain,bps,selected_triad_ids=free,exvol=exvol)
-    Nsingle = len(free)//4
-    if Nsingle == 0 and len(free) > 0: Nsingle = 1
+    single = SingleTriad(chain, bps, selected_triad_ids=free, exvol=exvol)
+    Nsingle = len(free) // 4
+    if Nsingle == 0 and len(free) > 0:
+        Nsingle = 1
     moves += [single for i in range(Nsingle)]
 
-    
     if closed:
         if len(fixed) == 0:
             # add crankshaft
-            cs = Crankshaft(chain,bps,2,N//2,exvol=exvol)            
-            ct = ClusterTrans(chain,bps,2, N//2,exvol=exvol)
-            moves += [cs,ct]
+            cs = Crankshaft(chain, bps, 2, N // 2, exvol=exvol)
+            ct = ClusterTrans(chain, bps, 2, N // 2, exvol=exvol)
+            moves += [cs, ct]
         else:
             # add crankshaft moves on intervals
             #  -> this will be replaced by a single move with multiple interval assignments
-            for fid in range(1,len(fixed)):
-                f1 = fixed[fid-1]+1
+            for fid in range(1, len(fixed)):
+                f1 = fixed[fid - 1] + 1
                 f2 = fixed[fid]
-                diff = f2-f1
+                diff = f2 - f1
                 if diff > 4:
-                    rge = np.min([N//2,diff])
-                    cs = Crankshaft(chain,bps,2,rge,range_id1=f1,range_id2=f2,exvol=exvol)
-                    ct = ClusterTrans(chain,bps,2,rge,range_id1=f1,range_id2=f2,exvol=exvol)
-                    moves += [cs,ct] 
-            
+                    rge = np.min([N // 2, diff])
+                    cs = Crankshaft(
+                        chain, bps, 2, rge, range_id1=f1, range_id2=f2, exvol=exvol
+                    )
+                    ct = ClusterTrans(
+                        chain, bps, 2, rge, range_id1=f1, range_id2=f2, exvol=exvol
+                    )
+                    moves += [cs, ct]
+
             # between last and first fix
-            f1 = (fixed[-1]+1)
+            f1 = fixed[-1] + 1
             f2 = fixed[0]
             diff = f2 - f1 + N
             if diff > 4:
-                rge = np.min([N//2,diff])
-                cs = Crankshaft(chain,bps,2,rge,range_id1=f1,range_id2=f2,exvol=exvol)
-                ct = ClusterTrans(chain,bps,2,rge,range_id1=f1,range_id2=f2,exvol=exvol)
-                moves += [cs,ct] 
-               
-    else:     
+                rge = np.min([N // 2, diff])
+                cs = Crankshaft(
+                    chain, bps, 2, rge, range_id1=f1, range_id2=f2, exvol=exvol
+                )
+                ct = ClusterTrans(
+                    chain, bps, 2, rge, range_id1=f1, range_id2=f2, exvol=exvol
+                )
+                moves += [cs, ct]
+
+    else:
         if not endpoints_fixed:
             # endpoints open
             if len(fixed) == 0:
-                pv1 = Pivot(chain,bps,rotate_end=False,exvol=exvol)
-                pv2 = Pivot(chain,bps,rotate_end=True,exvol=exvol)
-                moves += [pv1,pv2]
+                pv1 = Pivot(chain, bps, rotate_end=False, exvol=exvol)
+                pv2 = Pivot(chain, bps, rotate_end=True, exvol=exvol)
+                moves += [pv1, pv2]
             else:
                 if fixed[0] > 4:
-                    pv1 = Pivot(chain,bps,rotate_end=False,exvol=exvol,selection_limit_id=fixed[0])
+                    pv1 = Pivot(
+                        chain,
+                        bps,
+                        rotate_end=False,
+                        exvol=exvol,
+                        selection_limit_id=fixed[0],
+                    )
                     moves.append(pv1)
                 if fixed[-1] < N - 5:
-                    pv2 = Pivot(chain,bps,rotate_end=True,exvol=exvol,selection_limit_id=fixed[-1]+1)
+                    pv2 = Pivot(
+                        chain,
+                        bps,
+                        rotate_end=True,
+                        exvol=exvol,
+                        selection_limit_id=fixed[-1] + 1,
+                    )
                     moves.append(pv2)
-          
+
         else:
-            for fid in range(1,len(fixed)):
-                f1 = fixed[fid-1]+1
+            for fid in range(1, len(fixed)):
+                f1 = fixed[fid - 1] + 1
                 f2 = fixed[fid]
-                diff = f2-f1
+                diff = f2 - f1
                 if diff > 4:
-                    rge = np.min([N//2,diff])
-                    cs = Crankshaft(chain,bps,2,rge,range_id1=f1,range_id2=f2,exvol=exvol)
-                    ct = ClusterTrans(chain,bps,2,rge,range_id1=f1,range_id2=f2,exvol=exvol)
-                    moves += [cs,ct] 
-                    
+                    rge = np.min([N // 2, diff])
+                    cs = Crankshaft(
+                        chain, bps, 2, rge, range_id1=f1, range_id2=f2, exvol=exvol
+                    )
+                    ct = ClusterTrans(
+                        chain, bps, 2, rge, range_id1=f1, range_id2=f2, exvol=exvol
+                    )
+                    moves += [cs, ct]
+
     #############################
     # simulation loop
     confs = []
-    confs.append(np.copy(chain.conf[:,:3,3]))
+    confs.append(np.copy(chain.conf[:, :3, 3]))
     energies = []
     energies.append(bps.get_total_energy())
-    
+
     if num_cycles is not None:
         for cyc in range(num_cycles):
             for move in moves:
                 move.mc()
-            
-            if cyc%10==0:
+
+            if cyc % 10 == 0:
                 energies.append(bps.get_total_energy())
-            if dump_every is not None and cyc%dump_every==0:
-                confs.append(np.copy(chain.conf[:,:3,3]))
-            if cyc%1000==0: 
-                print(f'cycle {cyc}: ')
-                
+            if dump_every is not None and cyc % dump_every == 0:
+                confs.append(np.copy(chain.conf[:, :3, 3]))
+            if cyc % 1000 == 0:
+                print(f"cycle {cyc}: ")
+
     else:
-        cycles_per_eval = 10
-        evals_per_average = 50
-        
-        for cyc in range(cycles_per_eval*evals_per_average*2):
+        for cyc in range(cycles_per_eval * evals_per_average * 2):
             for move in moves:
                 move.mc()
-            if cyc%cycles_per_eval==0:
+            if cyc % cycles_per_eval == 0:
                 energies.append(bps.get_total_energy())
-            if dump_every is not None and cyc%dump_every==0:
-                confs.append(np.copy(chain.conf[:,:3,3]))
-        
+            if dump_every is not None and cyc % dump_every == 0:
+                confs.append(np.copy(chain.conf[:, :3, 3]))
+
         Em1 = np.mean(energies[:evals_per_average])
         Em2 = np.mean(energies[evals_per_average:])
         equi_down = Em1 > Em2
-        
-        print(f'E = {Em1} kT')
-        print(f'E = {Em2} kT')
-        
+        print(f"E = {Em1} kT")
+        print(f"E = {Em2} kT")
         cyc = 0
-        
         equilibrated = False
         while not equilibrated:
             # equilibration check
@@ -192,15 +213,13 @@ def equilibrate(
                     cyc += 1
                     for move in moves:
                         move.mc()
-                    if cyc%100==0:
-                        confs.append(np.copy(chain.conf[:,:3,3]))
-                     
+                    if cyc % 100 == 0:
+                        confs.append(np.copy(chain.conf[:, :3, 3]))
                 energies.append(bps.get_total_energy())
-            
+
             Em1 = Em2
             Em2 = np.mean(energies[-evals_per_average:])
-            
-            print(f'E = {Em2} kT')
+            print(f"E = {Em2} kT")
             if equi_down:
                 if Em2 > Em1:
                     equilibrated = True
@@ -209,58 +228,69 @@ def equilibrate(
                 if Em2 < Em1:
                     equilibrated = True
                     break
-                    
-    print(f'{len(moves)} moves initated')
-            
+
     out = {
-        'positions' : chain.conf[:,:3,3],
-        'triads'    : chain.conf[:,:3,:3],
-        'elastic'   : bps.get_total_energy(),
-        'confs'     : confs
+        "positions": chain.conf[:, :3, 3],
+        "triads": chain.conf[:, :3, :3],
+        "elastic": bps.get_total_energy(),
+        "confs": confs,
     }
     return out
-    
-    
-                
-            
 
-if __name__ == '__main__':
 
-    np.set_printoptions(linewidth=250,precision=3,suppress=True)
+if __name__ == "__main__":
+    np.set_printoptions(linewidth=250, precision=3, suppress=True)
 
-    npb  = 100
+    npb = 500
     closed = False
     endpoints_fixed = False
     fixed = []
     temp = 300
-    
-    conf = np.zeros((npb,4,4))
-    gs = np.array([0,0,0.6,0,0,0.34])
+
+    conf = np.zeros((npb, 4, 4))
+    gs = np.array([0, 0, 0.6, 0, 0, 0.34])
     g = so3.se3_euler2rotmat(gs)
     conf[0] = np.eye(4)
-    for i in range(1,npb):
-        g = so3.se3_euler2rotmat(gs+np.random.normal(0,0.1,6))
-        conf[i] = conf[i-1] @ g
-    
-    seq = ''.join(['ATCG'[np.random.randint(4)] for i in range(npb)])
+    for i in range(1, npb):
+        g = so3.se3_euler2rotmat(gs + np.random.normal(0, 0.1, 6))
+        conf[i] = conf[i - 1] @ g
 
-    triads = conf[:,:3,:3]
-    pos    = conf[:,:3,3]
+    seq = "".join(["ATCG"[np.random.randint(4)] for i in range(npb)])
 
-    print('first')
-    out = equilibrate(triads,pos,seq,closed=False,endpoints_fixed=False,fixed=[],temp=100000,num_cycles=100)
+    triads = conf[:, :3, :3]
+    pos = conf[:, :3, 3]
+
+    print("first")
+    out = equilibrate(
+        triads,
+        pos,
+        seq,
+        closed=False,
+        endpoints_fixed=False,
+        fixed=[],
+        temp=100000,
+        num_cycles=100,
+    )
 
     # fixed = [10,20,30,70]
     # fixed_pos1 = np.copy(out['positions'][fixed])
 
-    print('second')
-    out = equilibrate(out['triads'],out['positions'],seq,closed=closed,endpoints_fixed=endpoints_fixed,fixed=fixed,temp=300)
+    print("second")
+    out = equilibrate(
+        out["triads"],
+        out["positions"],
+        seq,
+        closed=closed,
+        endpoints_fixed=endpoints_fixed,
+        fixed=fixed,
+        temp=300,
+    )
 
     # fixed_pos2 = np.copy(out['positions'][fixed])
     # print(fixed_pos2-fixed_pos1)
 
     from ..Dumps.xyz import write_xyz
-    types = ['C' for i in range(len(conf))]
-    data = {'pos':out['confs'], 'types':types}
-    write_xyz('test_equi.xyz',data)
-    
+
+    types = ["C" for i in range(len(conf))]
+    data = {"pos": out["confs"], "types": types}
+    write_xyz("test_equi.xyz", data)
