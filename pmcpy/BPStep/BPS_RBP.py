@@ -49,6 +49,7 @@ class RBP(BPStep):
     def eval_delta_E(self) -> float:
         dE = 0
         for id in self.proposed_ids:
+            # beta E = 0.5 Om.T @ M @ Om
             self.proposed_energies[id] = (
                 0.5
                 * self.proposed_deforms[id].T
