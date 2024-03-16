@@ -8,6 +8,7 @@ from ..aux import random_unitsphere
 from ..BPStep.BPStep import BPStep
 from ..chain import Chain
 from ..ExVol.ExVol import ExVol
+from ..Constraints.Constraint import Constraint
 from ..pyConDec.pycondec import cond_jit
 from ..SO3 import so3
 from .mcstep import MCStep
@@ -24,6 +25,7 @@ class ClusterTrans(MCStep):
         range_id2: int = None,
         full_trial_conf: bool = False,
         exvol: ExVol = None,
+        constraints: List[Constraint] = []
     ):
         """
         Initiate:
@@ -31,7 +33,7 @@ class ClusterTrans(MCStep):
             - energy model (separate object passed to chain)
 
         """
-        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol)
+        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol,constraints=constraints)
         self.name = "ClusterTrans"
         self.USE_NUMBA_SEGMENT_ROTATION = True
 
@@ -80,7 +82,7 @@ class ClusterTrans(MCStep):
                 )
 
         self.requires_ev_check = True
-        self.moved_intervals = np.zeros((1, 3))
+        self.moved_intervals = np.zeros((1, 3),dtype=int)
         self.moved_intervals[0, 2] = 1000
 
     #########################################################################################
@@ -143,8 +145,14 @@ class ClusterTrans(MCStep):
 
         ##########################
         # set moved intervals for excluded volume check
-        self.moved_intervals[0, 0] = idA
-        self.moved_intervals[0, 1] = idBn
+        # self.moved_intervals[0, 0] = idA
+        # self.moved_intervals[0, 1] = idBn
+
+        # idAp1 = (idA + 1) % self.nbp
+        if idA < idBn:
+            self.moved_intervals = [[0,idA-1,0],[idA,idBn,1000],[idBn+1,self.nbp-1,0]]
+        else:
+            self.moved_intervals = [[0,idBn,1000],[idA,self.nbp-1,1000],[idBn+1,idA-1,0]]
 
         return True
 

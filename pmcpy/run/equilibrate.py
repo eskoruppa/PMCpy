@@ -241,7 +241,7 @@ def equilibrate(
 if __name__ == "__main__":
     np.set_printoptions(linewidth=250, precision=3, suppress=True)
 
-    npb = 500
+    npb = 25
     closed = False
     endpoints_fixed = False
     fixed = []
@@ -294,3 +294,43 @@ if __name__ == "__main__":
     types = ["C" for i in range(len(conf))]
     data = {"pos": out["confs"], "types": types}
     write_xyz("test_equi.xyz", data)
+    
+    
+    import matplotlib.pyplot as plt
+    def plot(pos, 
+        triads):
+    
+        fig = plt.figure()
+        ax = fig.add_subplot(111,projection='3d')
+        ax = plt.gca(projection='3d')
+        for position, frame in zip(pos,triads):
+            right, up, forward = frame.T
+            
+            ax.quiver(*position,*right,length=0.2,color='g')
+            ax.quiver(*position,*up,length=0.2,color='b')
+            ax.quiver(*position,*forward,length=0.2,color='r')
+        
+        ax.plot(*pos.T,color='black',label='Control Points',lw=1)
+        
+        com = np.mean(pos,axis=0)
+        maxrge = np.max([np.max(pos[:,i])-np.min(pos[:,i]) for i in range(3)])
+        margin = maxrge*0.01
+        halfrge = maxrge*0.5+margin
+        rges = []
+        for i in range(3):
+            rges.append([com[i]-halfrge,com[i]+halfrge])
+        for x in range(2):
+            for y in range(2):
+                for z in range(2):
+                    ax.scatter([rges[0][x]],[rges[1][y]],[rges[2][z]],alpha=0.01)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.legend()
+        plt.show()
+        
+    plot(out['positions'],out['triads'])
+
+
+
+

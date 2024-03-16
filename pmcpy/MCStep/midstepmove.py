@@ -9,6 +9,7 @@ from ..aux import random_unitsphere
 from ..BPStep.BPStep import BPStep
 from ..chain import Chain
 from ..ExVol.ExVol import ExVol
+from ..Constraints.Constraint import Constraint
 from ..SO3 import so3
 from .mcstep import MCStep
 
@@ -21,6 +22,7 @@ class MidstepMove(MCStep):
         midstep_triad_ids: List,
         full_trial_conf: bool = False,
         exvol: ExVol = None,
+        constraints: List[Constraint] = []
     ):
         """
         Initiate:
@@ -28,7 +30,7 @@ class MidstepMove(MCStep):
             - energy model (separate object passed to chain)
 
         """
-        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol)
+        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol,constraints=constraints)
         self.name = "MidstepMove"
 
         self.midstep_triad_ids = sorted(midstep_triad_ids)
@@ -59,8 +61,13 @@ class MidstepMove(MCStep):
         self.max_trans = MCS_MST_MAX_TRANS * np.sqrt(self.chain.temp / 300)
 
         self.requires_ev_check = True
-        self.moved_intervals = np.zeros((1, 3))
-        self.moved_intervals[0, 2] = 1000
+
+        # self.moved_intervals = np.zeros((3, 3),dtype=int)
+        # self.moved_intervals[0, 2] = 0
+        # self.moved_intervals[1, 2] = 1000
+        # self.moved_intervals[2, 2] = 0
+        # self.moved_intervals[0, 0] = 0
+        # self.moved_intervals[2, 1] = self.nbp-1
 
     #########################################################################################
     #########################################################################################
@@ -123,9 +130,10 @@ class MidstepMove(MCStep):
         self.chain.conf[id1] = tau1p
         self.chain.conf[id2] = tau2p
 
-        self.moved_intervals[0, 0] = id1
-        self.moved_intervals[0, 1] = id2 + 1
-
+        if id1 < id2:
+            self.moved_intervals = [[0,id1-1,0],[id1,id2,1000],[id2+1,self.nbp-1,0]]
+        else:
+            self.moved_intervals = [[0,id2,1000],[id2+1,id1-1,0], [id1,self.nbp-1,1000]]
         return True
 
 

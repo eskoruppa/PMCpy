@@ -7,6 +7,7 @@ import numpy as np
 from ..BPStep.BPStep import BPStep
 from ..chain import Chain
 from ..ExVol.ExVol import ExVol
+from ..Constraints.Constraint import Constraint
 from ..pyConDec.pycondec import cond_jit
 from ..SO3 import so3
 from .mcstep import MCStep
@@ -23,7 +24,8 @@ class Crankshaft(MCStep):
         range_id2: int = None,
         full_trial_conf: bool = False,
         exvol: ExVol = None,
-        numba_tail_rotation: bool = True,
+        constraints: List[Constraint] = [],
+        use_numba: bool = True,
     ):
         """
         Initiate:
@@ -31,11 +33,11 @@ class Crankshaft(MCStep):
             - energy model (separate object passed to chain)
 
         """
-        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol)
+        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol,constraints=constraints)
         self.name = "Crankshaft"
-        self.numba_tail_rotation = numba_tail_rotation
+        self.numba_segment_rotation = use_numba
 
-        MCS_CSROT_FAC = 0.25
+        MCS_CSROT_FAC = 0.25 
         self.sigma = MCS_CSROT_FAC * np.sqrt(
             self.chain.temp / 300
         )  # *np.sqrt(disc_len/0.34);
@@ -82,7 +84,7 @@ class Crankshaft(MCStep):
                 )
 
         self.requires_ev_check = True
-        self.moved_intervals = np.zeros((1, 3))
+        self.moved_intervals = np.zeros((1, 3),dtype=int)
         self.moved_intervals[0, 2] = 1000
 
     #########################################################################################
@@ -150,7 +152,7 @@ class Crankshaft(MCStep):
         self.chain.conf[idA] = TA_rot
         self.chain.conf[idBn] = TBn_rot
 
-        if self.numba_tail_rotation:
+        if self.numba_segment_rotation:
             self.chain.conf = segment_rotation(
                 self.chain.conf, Rlab, self.nbp, idA, hingedist
             )
@@ -177,12 +179,18 @@ class Crankshaft(MCStep):
                 idm1 = id
                 id = (id + 1) % self.nbp
                 self.chain.conf[id, :3, 3] = (
-                    self.chain.conf[idm1, :3, 3] + rotated_vecs[i]
+                    self.chain.conf[idm1, idAp1:3, 3] + rotated_vecs[i]
                 )
 
-        self.moved_intervals[0, 0] = (idA + 1) % self.nbp
-        self.moved_intervals[0, 1] = idBn
+        # self.moved_intervals[0, 0] = (idA + 1) % self.nbp
+        # self.moved_intervals[0, 1] = idBn
 
+        idAp1 = (idA + 1) % self.nbp
+        if idAp1 < idBn:
+            self.moved_intervals = [[0,idAp1-1,0],[idAp1,idBn,1000],[idBn+1,self.nbp-1,0]]
+        else:
+            self.moved_intervals = [[0,idBn,1000],[idAp1,self.nbp-1,1000],[idBn+1,idAp1-1,0]]
+            
         return True
 
     #########################################################################################

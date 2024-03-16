@@ -8,6 +8,7 @@ import numpy as np
 from ..BPStep.BPStep import BPStep
 from ..chain import Chain
 from ..ExVol.ExVol import ExVol
+from ..Constraints.Constraint import Constraint
 from ..SO3 import so3
 
 
@@ -18,6 +19,7 @@ class MCStep(ABC):
         bpstep: BPStep,
         full_trial_conf: bool = False,
         exvol: ExVol = None,
+        constraints: List[Constraint] = []
     ):
         """
         Initiate:
@@ -40,7 +42,7 @@ class MCStep(ABC):
         self.count_accept = 0
 
         # moved list
-        self.moved = []
+        self.moved_intervals = []
 
         # backup setting
         self.backup_required = False
@@ -54,8 +56,8 @@ class MCStep(ABC):
             self.ev_active = True
 
         # constraints
-        self.constraint_active = False
-        self.constraints = []
+        self.constraints = constraints
+        self.constraint_active = (not len(constraints) == 0)
 
     #########################################################################################
     #########################################################################################
@@ -69,20 +71,63 @@ class MCStep(ABC):
             )
 
         else:
+            # these conditions can probably be improved!
             accepted = self.mc_move()
             if accepted:
                 if self.constraint_active:
                     accepted = self.check_constraints()
 
                 if accepted and self.ev_active and self.requires_ev_check:
-                    accepted = self.exvol.check(self.moved)
+                    accepted = self.exvol.check(self.moved_intervals)
+                    
+                if not accepted:
+                    self.chain.revert_to_backup()
 
             if accepted:
                 self.count_accept += 1
-                if self.backup_required:
+                if self.backup_required or self.ev_active:
                     self.chain.set_backup()
-
+              
         self.bpstep.set_move(accepted)
+        
+        # call chain maintainance methods
+        # conf = np.copy(self.chain.conf)
+        if self.chain.check_realign():
+            dE = self.bpstep.init_conf()
+            # if np.abs(dE) > 1e-4:
+            #     print(f'{dE=}')
+            #     print(f'Realignment shifted energy!')
+                
+            #     np.set_printoptions(linewidth=250, precision=8, suppress=True)
+            #     for i in range(self.nbp):
+            #         Th = so3.rotmat2euler(self.chain.conf[i,:3,:3].T @ conf[i,:3,:3])
+            #         # print('%.16f %.16f %.16f'%(Th[0],Th[1],Th[2]))
+            #         if np.linalg.norm(Th) > 1e-8:
+            #             print('--------------------')
+            #             print(f'id {i}')
+            #             print(f'norm = {np.linalg.norm(Th)}')
+            #             print('%.10f %.10f %.10f'%(Th[0],Th[1],Th[2]))
+            #             # print(f'{Th[0]} {Th[1]} {Th[2]}')
+            #             print(f'det = {np.linalg.det(conf[i,:3,:3])}')
+            #             print(conf[i])
+            #             print(self.chain.conf[i])
+            #             print(so3.euler2rotmat(so3.rotmat2euler(conf[i,:3,:3])))
+
+            #             tau = conf[i,:3,:3]
+            #             taup = so3.euler2rotmat(so3.rotmat2euler(tau))
+            #             Th = so3.rotmat2euler(tau.T @ taup)
+            #             print('%.16f %.16f %.16f'%(Th[0],Th[1],Th[2]))
+                        
+            #             print(so3.rotmat2euler(tau))
+            #             print(so3.rotmat2euler(taup))
+                        
+            #             print('##########')
+            #             Om = so3.rotmat2euler(tau)
+            #             Omp = so3.rotmat2euler(so3.euler2rotmat(Om))
+            #             print(Om)
+            #             print(Omp)
+            #     sys.exit()
+      
         return accepted
 
     #########################################################################################
@@ -90,7 +135,7 @@ class MCStep(ABC):
 
     def check_constraints(self) -> bool:
         for constraint in self.constraints:
-            if not constraint.check():
+            if not constraint.check(moved=self.moved_intervals):
                 return False
         return True
 

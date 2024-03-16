@@ -8,6 +8,7 @@ from ..aux import random_unitsphere
 from ..BPStep.BPStep import BPStep
 from ..chain import Chain
 from ..ExVol.ExVol import ExVol
+from ..Constraints.Constraint import Constraint
 from ..pyConDec.pycondec import cond_jit
 from ..SO3 import so3
 from .mcstep import MCStep
@@ -19,8 +20,10 @@ class SingleTriad(MCStep):
         chain: Chain,
         bpstep: BPStep,
         selected_triad_ids: List = None,
+        excluded_triad_ids: List = None,
         full_trial_conf: bool = False,
         exvol: ExVol = None,
+        constraints: List[Constraint] = []
     ):
         """
         Initiate:
@@ -28,13 +31,19 @@ class SingleTriad(MCStep):
             - energy model (separate object passed to chain)
 
         """
-        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol)
+        super().__init__(chain, bpstep, full_trial_conf, exvol=exvol,constraints=constraints)
         self.name = "SingleTriad"
 
         if selected_triad_ids is None:
             self.selected_triad_ids = np.arange(0, self.nbp)
         else:
             self.selected_triad_ids = np.array(np.sort(selected_triad_ids))
+        
+        if excluded_triad_ids is not None:
+            for excl in excluded_triad_ids:
+                if excl == -1:
+                    excl = self.nbp-1
+                self.selected_triad_ids = np.delete(self.selected_triad_ids, np.argwhere(self.selected_triad_ids==excl))
 
         MCS_MST_MAX_THETA = 0.09
         MCS_MST_MAX_TRANS = 0.1
@@ -42,8 +51,12 @@ class SingleTriad(MCStep):
         self.max_trans = MCS_MST_MAX_TRANS * np.sqrt(self.chain.temp / 300)
 
         self.requires_ev_check = True
-        self.moved_intervals = np.zeros((1, 3))
-        self.moved_intervals[0, 2] = 1000
+        self.moved_intervals = np.zeros((3, 3),dtype=int)
+        self.moved_intervals[0, 2] = 0
+        self.moved_intervals[1, 2] = 1000
+        self.moved_intervals[2, 2] = 0
+        self.moved_intervals[0, 0] = 0
+        self.moved_intervals[2, 1] = self.nbp-1
 
     #########################################################################################
     #########################################################################################
@@ -92,8 +105,10 @@ class SingleTriad(MCStep):
         # assign changes
         self.chain.conf[id] = tau
 
-        self.moved_intervals[0, 0] = id
-        self.moved_intervals[0, 1] = idp1
+        self.moved_intervals[0, 1] = id-1
+        self.moved_intervals[1, 0] = id
+        self.moved_intervals[1, 1] = id
+        self.moved_intervals[2, 0] = id+1
 
         return True
 

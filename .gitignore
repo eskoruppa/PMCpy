@@ -13,6 +13,14 @@
 **data/
 **DATA/
 
+# ignore run directories
+**Run/
+**run/
+**RUN/
+
+# ignore run directories
+**PyLk/
+
 # ignore egg-info directory
 **.egg-info/
 
