@@ -7,3 +7,6 @@
 [submodule "pmcpy/pyConDec"]
 	path = pmcpy/pyConDec
 	url = git@github.com:eskoruppa/pyConDec
+[submodule "pmcpy/Evals/PyLk"]
+	path = pmcpy/Evals/PyLk
+	url = git@github.com:eskoruppa/PyLk
