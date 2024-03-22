@@ -163,6 +163,7 @@ def singleMove_intervals(
                     dist = singleMove(EV_beads[a],EV_beads[b],bp_pos,bp_pos_backup)
                     if (dist < EV_dist):
                         # debug_plot(bp_pos,bp_pos_backup,EV_beads,a,b)
+                        # print(f'violation: {EV_beads[a]}-{EV_beads[b]}')
                         return False
                     #b+=1
                     b += int((dist-EV_dist)//curr_size_EV_bead+1)
@@ -182,6 +183,7 @@ def singleMove_intervals(
                     dist = singleMove(EV_beads[a],EV_beads[b],bp_pos,bp_pos_backup)
                     if (dist < EV_dist):
                         # debug_plot(bp_pos,bp_pos_backup,EV_beads,a,b)
+                        # print(f'violation: {EV_beads[a]}-{EV_beads[b]}')
                         return False
                     #b+=1
                     b += int((dist-EV_dist)//curr_size_EV_bead+1)
@@ -194,6 +196,7 @@ def singleMove_intervals(
             dist = singleMove(EV_beads[a],EV_beads[b],bp_pos,bp_pos_backup)
             if (dist < EV_dist):
                 # debug_plot(bp_pos,bp_pos_backup,EV_beads,a,b)
+                # print(f'violation: {EV_beads[a]}-{EV_beads[b]}')
                 return False
             #b+=1
             b += int((dist-EV_dist)//curr_size_EV_bead+1)

@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, List, Tuple
 import numpy as np
+import scipy as sp
 import sys
 from ..chain import Chain
 from ..SO3 import so3
@@ -28,9 +29,7 @@ class RBP(BPStep):
         self._set_stiffness(stiffmat,coupling_range,sequence,closed)
         
         super().__init__(chain, sequence, closed, static_group, temp=temp,conserve_twist=conserve_twist)
-        self.current_energies = np.zeros(self.nbps)
-        self.proposed_energies = np.zeros(self.nbps)
-
+                
 
     #########################################################################################
     #########################################################################################
@@ -41,9 +40,8 @@ class RBP(BPStep):
                 raise ValueError(f'Invalid dimension of provided ground state. Shape should be be (N,6) or (6N,)')
             N = len(groundstate) // 6
             groundstate = groundstate.reshape(N,6)
-        self.gs_vecs = groundstate
-        
-    
+        self.gs_vecs = groundstate        
+            
     def _set_stiffness(self, stiffmat: np.ndarray, coupling_range: int, sequence: str, closed: bool) -> None:
 
         # assign nbps
@@ -56,7 +54,7 @@ class RBP(BPStep):
         self.stiffmat = stiffmat
         self.ncoup = coupling_range
         klim = coupling_range+1
-        N = len(stiffmat) // 6
+        N = stiffmat.shape[0] // 6
         self.klim = klim
         
         if closed and 2*self.ncoup >= nbps:
@@ -75,16 +73,15 @@ class RBP(BPStep):
                 j = i+k
                 if j >= nbps:
                     j = j % nbps
-
-                self.table_matblocks[i,k] = stiffmat[i*6:(i+1)*6,j*6:(j+1)*6]
+                
+                if sp.sparse.isspmatrix(stiffmat):
+                    self.table_matblocks[i,k] = stiffmat[i*6:(i+1)*6,j*6:(j+1)*6].toarray()
+                else:
+                    self.table_matblocks[i,k] = stiffmat[i*6:(i+1)*6,j*6:(j+1)*6]
                 if k == 0 :
                     # diagnonal components pick up the leading factor 1/2, while for off-diagonal components that factor 
                     # cancels due to the double occurance of the corresponding term
                     self.table_matblocks[i,k] *= 0.5
-
-        self.E_curr = 0
-        self.E_prop = 0
-
 
     def _init_params(self) -> None:
         pass
@@ -120,6 +117,8 @@ class RBP(BPStep):
                         # out of range
                         continue
                     j = j % self.nbps
+                
+                # the factor 1/2 is included in the matrix
                 self.table_proposed_energies[i,k] = self.proposed_deforms[i].T @ self.table_matblocks[i,k] @ self.proposed_deforms[j].T
                 table_selection[i,k] = True
                 dE += self.table_proposed_energies[i,k] - self.table_current_energies[i,k]
@@ -136,6 +135,8 @@ class RBP(BPStep):
                         # out of range
                         continue
                     j = j % self.nbps
+                    
+                # the factor 1/2 is included in the matrix
                 self.table_proposed_energies[ii,k] = self.proposed_deforms[ii].T @ self.table_matblocks[ii,k] @ self.proposed_deforms[j].T
                 table_selection[ii,k] = True
                 dE += self.table_proposed_energies[ii,k] - self.table_current_energies[ii,k]

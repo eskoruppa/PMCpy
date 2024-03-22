@@ -93,40 +93,7 @@ class MCStep(ABC):
         # call chain maintainance methods
         # conf = np.copy(self.chain.conf)
         if self.chain.check_realign():
-            dE = self.bpstep.init_conf()
-            # if np.abs(dE) > 1e-4:
-            #     print(f'{dE=}')
-            #     print(f'Realignment shifted energy!')
-                
-            #     np.set_printoptions(linewidth=250, precision=8, suppress=True)
-            #     for i in range(self.nbp):
-            #         Th = so3.rotmat2euler(self.chain.conf[i,:3,:3].T @ conf[i,:3,:3])
-            #         # print('%.16f %.16f %.16f'%(Th[0],Th[1],Th[2]))
-            #         if np.linalg.norm(Th) > 1e-8:
-            #             print('--------------------')
-            #             print(f'id {i}')
-            #             print(f'norm = {np.linalg.norm(Th)}')
-            #             print('%.10f %.10f %.10f'%(Th[0],Th[1],Th[2]))
-            #             # print(f'{Th[0]} {Th[1]} {Th[2]}')
-            #             print(f'det = {np.linalg.det(conf[i,:3,:3])}')
-            #             print(conf[i])
-            #             print(self.chain.conf[i])
-            #             print(so3.euler2rotmat(so3.rotmat2euler(conf[i,:3,:3])))
-
-            #             tau = conf[i,:3,:3]
-            #             taup = so3.euler2rotmat(so3.rotmat2euler(tau))
-            #             Th = so3.rotmat2euler(tau.T @ taup)
-            #             print('%.16f %.16f %.16f'%(Th[0],Th[1],Th[2]))
-                        
-            #             print(so3.rotmat2euler(tau))
-            #             print(so3.rotmat2euler(taup))
-                        
-            #             print('##########')
-            #             Om = so3.rotmat2euler(tau)
-            #             Omp = so3.rotmat2euler(so3.euler2rotmat(Om))
-            #             print(Om)
-            #             print(Omp)
-            #     sys.exit()
+            self.bpstep.init_conf()
       
         return accepted
 

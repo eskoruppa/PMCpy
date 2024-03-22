@@ -1,8 +1,17 @@
 import os
 import sys
 from typing import Any, Callable, Dict, List, Tuple
-
 import numpy as np
+
+try:
+    from numba import jit
+    from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning, NumbaPerformanceWarning
+    import warnings
+    warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
+    warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
+    warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
+except ModuleNotFoundError:
+    print('ModuleNotFoundError: numba')
 
 from ..BPStep.BPStep import BPStep
 from ..chain import Chain, se3_triads

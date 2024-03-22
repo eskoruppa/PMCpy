@@ -19,6 +19,8 @@ class SingleTriad(MCStep):
         self,
         chain: Chain,
         bpstep: BPStep,
+        rotate: bool = True,
+        translate: bool = True,
         selected_triad_ids: List = None,
         excluded_triad_ids: List = None,
         full_trial_conf: bool = False,
@@ -33,6 +35,9 @@ class SingleTriad(MCStep):
         """
         super().__init__(chain, bpstep, full_trial_conf, exvol=exvol,constraints=constraints)
         self.name = "SingleTriad"
+
+        self.rotate = rotate
+        self.translate = translate
 
         if selected_triad_ids is None:
             self.selected_triad_ids = np.arange(0, self.nbp)
@@ -68,20 +73,23 @@ class SingleTriad(MCStep):
         idm1 = (id - 1) % self.nbp
         idp1 = (id + 1) % self.nbp
 
+        tau = np.copy(self.chain.conf[id])
+        
         # random translation
-        s = random_unitsphere()
-        dr = np.random.uniform(0, self.max_trans)
-        dv = s * dr
+        if self.translate:
+            s = random_unitsphere()
+            dr = np.random.uniform(0, self.max_trans)
+            dv = s * dr
+            tau[:3, 3] += dv
 
         # random rotation
-        s = random_unitsphere()
-        theta = np.random.uniform(0, self.max_theta)
-        Theta = s * theta
-        G = so3.euler2rotmat(Theta)
-
-        tau = np.copy(self.chain.conf[id])
-        tau[:3, :3] = G @ tau[:3, :3]
-        tau[:3, 3] += dv
+        if self.rotate:
+            s = random_unitsphere()
+            theta = np.random.uniform(0, self.max_theta)
+            Theta = s * theta
+            G = so3.euler2rotmat(Theta)
+            tau[:3, :3] = G @ tau[:3, :3]
+        
 
         # propose moves
         if id > 0 or self.closed:
@@ -95,8 +103,7 @@ class SingleTriad(MCStep):
 
         # calculate energy
         dE = self.bpstep.eval_delta_E()
-        # print(dE)
-
+        
         # metropolis step
         if np.random.uniform() >= np.exp(-dE):
             return False

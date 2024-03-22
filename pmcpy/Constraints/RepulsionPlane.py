@@ -38,8 +38,8 @@ class RepulsionPlane(Constraint):
     
     def check(self, moved: List = None) -> bool:
         
-        if moved is None:
-            moved = [[1,self.num_bp-2,1]]
+        # if moved is None:
+        #     moved = [[1,self.num_bp-2,1]]
         if self.front_plane:
             lower = np.dot(self.chain.conf[0,:3,3],self.normal)
         else:
@@ -49,12 +49,12 @@ class RepulsionPlane(Constraint):
         else:
             upper = None
         pos = self.chain.conf[:,:3,3]
-        for interval in moved:
-            if interval[2] <= 0:
-                continue
-            if not check_interval(pos,interval[0],interval[1],self.normal,lower=lower,upper=upper):
-                return False
-        return True        
+        return check_interval(pos,1,self.num_bp-2,self.normal,lower=lower,upper=upper)
+        # for interval in moved:
+        #     if interval[2] <= 0:
+        #         continue
+        #     return check_interval(pos,interval[0],interval[1],self.normal,lower=lower,upper=upper)  
+        # return True        
         
 @cond_jit
 def check_interval(pos: np.ndarray, idfrom: int, idto: int, normal: np.ndarray, lower: float = None, upper: float = None):

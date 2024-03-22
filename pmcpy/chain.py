@@ -68,6 +68,14 @@ class Chain:
         self.realign_step_count = 0
         self.realign_triads()
         return True
+    
+    @property
+    def positions(self):
+        return self.conf[:,:3,3]
+    
+    @property
+    def triads(self):
+        return self.conf[:,:3,:3]
 
 ##################################################################################################
 ### Extra Chain Methods ##########################################################################

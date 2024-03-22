@@ -232,15 +232,12 @@ class EVBeads(ExVol):
     #########################################################################################
     
     def check(self, moved: List = None):
-        
-        # print('##############################################')
-        # print('##############################################')
-        # print('##############################################')
-        self.check_list = []
-        
+                
         self.counter += 1
         EV_typeA,EV_typeB,EV_typeC,EV_typeD,EV_typeE = self.cal_EV_intervals(moved)
 
+        # print('#####################')
+        # print(f'{moved=}')
         # print(f'{EV_typeA=}')
         # print(f'{EV_typeB=}')
         # print(f'{EV_typeC=}')
@@ -261,10 +258,6 @@ class EVBeads(ExVol):
             # print(f'max_EV_bead_dist: {self.max_EV_bead_dist}')
             return False
         
-        # print(f'largest dist:     {largest}')
-        # print(f'max_EV_bead_dist: {self.max_EV_bead_dist}')
-        # self.curr_size_EV_bead = largest
-        
         # check crossings
         if (self.check_crossings):
             check = self.check_intervals(EV_typeA,EV_typeB,EV_typeC,EV_typeD,EV_typeE)
@@ -282,8 +275,6 @@ class EVBeads(ExVol):
                 print(f'{EV_typeC=}')
                 print(f'{EV_typeD=}')
                 print(f'{EV_typeE=}')                
-                for cl in self.check_list:
-                    print(cl)
                 sys.exit()    
         ##########################################
         return check   
@@ -339,20 +330,12 @@ class EVBeads(ExVol):
         EV_typeD: List[int],
         EV_typeE: List[int]
     ) -> bool:
-        
-        # print('################')
-        # print(EV_typeA)
-        # print(EV_typeB)
-        # print(EV_typeC)
-        # print(EV_typeD)
-        # print(EV_typeE)
-        
+                
         # Check EV_typeC
         for tC in range(len(EV_typeC)):
             # Check with all EV_typeA with singleMove check
             for tA in range(len(EV_typeA)-1,-1,-1):
                 if (not self.check_interval_singleMove(EV_typeC[tC][self.EV_FROM],EV_typeC[tC][self.EV_TO],EV_typeA[tA][self.EV_FROM],EV_typeA[tA][self.EV_TO])):
-                    self.check_list.append('return False')
                     return False
 
             # Check with all EV_typeB with doubleMove check
@@ -383,7 +366,6 @@ class EVBeads(ExVol):
             # Check with all EV_typeA with singleMove check
             for tA in range(0,len(EV_typeA)):
                 if (not self.check_interval_singleMove(EV_typeD[tD][self.EV_FROM],EV_typeD[tD][self.EV_TO],EV_typeA[tA][self.EV_FROM],EV_typeA[tA][self.EV_TO])):
-                    self.check_list.append('return False')
                     return False
 
             # Check with all EV_typeB with doubleMove check
@@ -412,7 +394,6 @@ class EVBeads(ExVol):
             # Check with all EV_typeA with singleMove check
             for tA in range(0,len(EV_typeA)):
                 if (not self.check_interval_singleMove(EV_typeB[tB][self.EV_FROM],EV_typeB[tB][self.EV_TO],EV_typeA[tA][self.EV_FROM],EV_typeA[tA][self.EV_TO])):
-                    self.check_list.append('return False')
                     return False
 
             # Check with all EV_typeE with doubleMove check
@@ -441,7 +422,6 @@ class EVBeads(ExVol):
             in the A interval have to be considered. The checking is done by the
             singleMove method.
         """
-        
         if self.debug:
             if (not (A2<B1 or B2 < A1)):
                 print(f'Check Intervals {A1} {A2} {B1} {B2}')
@@ -480,7 +460,6 @@ class EVBeads(ExVol):
                             # debug_plot(self.bp_pos,self.bp_pos_backup,self.EV_beads,a,b)
                             return False
                         #b+=1
-                        self.check_list.append(f'P1: {a} {b} - {dist} {int((dist-self.EV_dist)//self.curr_size_EV_bead)}')
                         b += int((dist-self.EV_dist)//self.curr_size_EV_bead+1)
                     a += 1
             
@@ -503,7 +482,6 @@ class EVBeads(ExVol):
                             # debug_plot(self.bp_pos,self.bp_pos_backup,self.EV_beads,a,b)
                             return False
                         #b+=1
-                        self.check_list.append(f'P2: {a} {b} - {dist} {int((dist-self.EV_dist)//self.curr_size_EV_bead)}')
                         b += int((dist-self.EV_dist)//self.curr_size_EV_bead+1)
                     a+=1
         else:
@@ -526,7 +504,6 @@ class EVBeads(ExVol):
                             # debug_plot(self.bp_pos,self.bp_pos_backup,self.EV_beads,a,b)
                             return False
                         #b+=1
-                        self.check_list.append(f'N1: {a} {b} - {dist} {int((dist-self.EV_dist)//self.curr_size_EV_bead)}')
                         b += int((dist-self.EV_dist)//self.curr_size_EV_bead+1)
             
             # Left to right order: B - A
@@ -546,23 +523,18 @@ class EVBeads(ExVol):
                             # debug_plot(self.bp_pos,self.bp_pos_backup,self.EV_beads,a,b)
                             return False
                         #b+=1
-                        self.check_list.append(f'N2: {a} {b} - {dist} {int((dist-self.EV_dist)//self.curr_size_EV_bead)}')
                         b += int((dist-self.EV_dist)//self.curr_size_EV_bead+1)
                         
         ##############################################################
         # Finally check all pairs outside the range of potential neighbour skips. I.e. the bulk of the intervals.
-        self.check_list.append(f'a1 = {a1}')
-        self.check_list.append(f'a2 = {a2}')
         for a in range(a1,a2+1):
             b = int(B1)
             while (b<=B2):
                 dist = singleMove(self.EV_beads[a],self.EV_beads[b],self.bp_pos,self.bp_pos_backup)
                 if (dist < self.EV_dist):
                     # debug_plot(self.bp_pos,self.bp_pos_backup,self.EV_beads,a,b)
-                    self.check_list.append(f'failed')
                     return False
                 #b+=1
-                self.check_list.append(f'BU:  {a} {b} - {dist} {int((dist-self.EV_dist)//self.curr_size_EV_bead)}')
                 b += int((dist-self.EV_dist)//self.curr_size_EV_bead+1)
         return True
         
@@ -578,7 +550,7 @@ class EVBeads(ExVol):
             intervals have not moved such that The checking needs to be done by the 
             doubleMove method.
         """
-        
+
         if self.debug:
             if (not (A2<B1 or B2 < A1)):
                 print(f'Check Intervals {A1} {A2} {B1} {B2}')

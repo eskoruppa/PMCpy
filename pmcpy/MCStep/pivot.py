@@ -41,7 +41,9 @@ class Pivot(MCStep):
         # if self.closed:
         #     raise ValueError(f"Pivot: Pivot move not allowed for closed chains.")
 
-        MCS_MST_MAX_THETA = 0.09
+        MCS_MST_MAX_THETA = 0.1
+        if preserve_termini:
+            MCS_MST_MAX_THETA *= 6
         self.max_theta = MCS_MST_MAX_THETA * np.sqrt(self.chain.temp / 300)
         self.max_theta_half = self.max_theta * 0.5
 

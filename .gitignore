@@ -13,13 +13,18 @@
 **data/
 **DATA/
 
+# ignore Params directories
+**Params/
+
 # ignore run directories
 **Run/
 **run/
 **RUN/
+**srun.py
+**srun_*.sh
 
-# ignore run directories
-**PyLk/
+# ignore reports directory
+** reports/
 
 # ignore egg-info directory
 **.egg-info/
