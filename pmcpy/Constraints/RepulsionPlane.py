@@ -49,6 +49,7 @@ class RepulsionPlane(Constraint):
         else:
             upper = None
         pos = self.chain.conf[:,:3,3]
+        
         return check_interval(pos,1,self.num_bp-2,self.normal,lower=lower,upper=upper)
         # for interval in moved:
         #     if interval[2] <= 0:
@@ -60,13 +61,12 @@ class RepulsionPlane(Constraint):
 def check_interval(pos: np.ndarray, idfrom: int, idto: int, normal: np.ndarray, lower: float = None, upper: float = None):
     if idfrom == 0:
         idfrom = 1
-    if idto   == len(pos) - 1:
+    if idto  == len(pos) - 1:
         idto = len(pos) - 2
-    projs = np.dot(pos[idfrom:idto+1],normal)
-    
     if idfrom > idto:
         return True
-
+    
+    projs = np.dot(pos[idfrom:idto+1],normal)
     if lower is not None:
         if np.min(projs) < lower:
             return False  

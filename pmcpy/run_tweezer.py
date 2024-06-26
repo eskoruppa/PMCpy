@@ -1,6 +1,4 @@
-import os
-import sys
-from typing import Any, Callable, Dict, List, Tuple
+import os, sys
 import time 
 import numpy as np
 import scipy as sp
@@ -28,8 +26,6 @@ from .MCStep.pivot import Pivot
 from .MCStep.singletriad import SingleTriad
 from .MCStep.doublepivot import DoublePivot
 
-from .SO3 import so3
-
 from .ExVol.EVBeads import EVBeads
 from .Constraints.RepulsionPlane import RepulsionPlane
 from .Dumps.xyz import write_xyz
@@ -39,8 +35,15 @@ from .GenConfs.straight import gen_straight
 from .GenConfs.load_seq import load_seq
 
 from .Evals.PyLk.pylk import writhemap
+from . import Evals as evals
 
 if __name__ == "__main__":
+    
+    ########################################################################################
+    ########################### SETUP ###################################################### 
+    ########################################################################################
+    # writhe configuration extension
+    num_ext = 10
     
     parser = argparse.ArgumentParser(description="Generate PolyMC input files")
     parser.add_argument('-in',    '--basename', type=str, required=True) 
@@ -52,9 +55,11 @@ if __name__ == "__main__":
     parser.add_argument('-equi',   '--equilibration_steps', type=int, default=0)
     parser.add_argument('-nprint', '--print_every', type=int, default=10000)
     parser.add_argument('-fomtn',  '--fomtn', type=int, default=0)
+    parser.add_argument('-fomtwr', '--include_writhe', action='store_true')
     parser.add_argument('-xyzn',   '--xyzn', type=int, default=0)
     parser.add_argument('-dlk',    '--linking_number', type=float, default=0)
-    parser.add_argument('-fl',     '--fix_link', type=bool, default=False)
+    parser.add_argument('-print_link', '--print_link', action='store_true')
+    parser.add_argument('-fl',     '--fix_link', action='store_true')
     # parser.add_argument('-trace',  '--trace', action='store_true')
     args = parser.parse_args()
     
@@ -71,11 +76,22 @@ if __name__ == "__main__":
     stiff = sp.sparse.load_npz(stifffn)
     # stiff = sp.sparse.lil_matrix(stiff)
     gs    = np.load(gsfn)
-        
+              
     if os.path.isfile(basename):
         seq = load_seq(basename)
     else:
         seq = 'X'*(len(gs)+1)
+        
+    # ####################
+    # print('TESTING! REMOVE THIS!')
+    # # REMOVE THIS!
+    # # gs[:,:2] = 0
+    # # gs[:,3:5] = 0
+    # N = 100
+    # gs = gs[:N]
+    # stiff = stiff[:N*6,:N*6]
+    # seq = seq[:N+1]
+    # ####################
         
     # intial configuration
     print('####################################')
@@ -84,7 +100,7 @@ if __name__ == "__main__":
     nbp  = len(conf)
     nbps = nbp-1
     closed = False
-        
+            
     # intiate chain
     print('####################################')
     print('Initiating Chain...')
@@ -95,7 +111,7 @@ if __name__ == "__main__":
     print('Initiating Elastic Energy...')
     ncoup = args.ncoup
     bps = RBP(chain,seq,gs,stiff,ncoup,closed=closed,static_group=True)
-    
+        
     # set angle tracing
     if not args.fix_link:
         bps.trace_angle_last_triad()
@@ -106,7 +122,7 @@ if __name__ == "__main__":
     force_dir = np.array([0,0,1])
     beta_force = force_dir * force / 4.114
     bps.set_stretching_force(beta_force)
-    
+        
     # set excluded volume
     evdist = args.evdist
     check_crossings=True
@@ -134,9 +150,9 @@ if __name__ == "__main__":
     moves = list()
     max_cluster = np.min([nbp//2,400])
     moves.append(DoublePivot(chain,bps,2,nbp//2,exvol=EV,constraints=constraints))
-    moves.append(Crankshaft(chain, bps, 2, max_cluster,exvol=EV))
-    moves.append(ClusterTrans(chain, bps, 2, max_cluster,exvol=EV))
-    st_full = SingleTriad(chain,bps,exvol=EV,excluded_triad_ids=[0,-1])
+    moves.append(Crankshaft(chain, bps, 2, max_cluster,exvol=EV,constraints=constraints))
+    moves.append(ClusterTrans(chain, bps, 2, max_cluster,exvol=EV,constraints=constraints))
+    st_full = SingleTriad(chain,bps,exvol=EV,excluded_triad_ids=[0,-1],constraints=constraints)
     moves += [st_full]*2
     
     # link changing moves
@@ -145,7 +161,7 @@ if __name__ == "__main__":
         sel_limit = nbp - 20
         if sel_limit < 1: sel_limit = 1     
         moves.append(Pivot(chain, bps,exvol=EV,constraints=constraints,rotate_end=True,preserve_termini=True,selection_limit_id=sel_limit))
-        st_trans = SingleTriad(chain,bps,exvol=EV,rotate=False,selected_triad_ids=[id for id in range(nbp-20,nbp) if id > 0])
+        st_trans = SingleTriad(chain,bps,exvol=EV,rotate=False,selected_triad_ids=[id for id in range(nbp-20,nbp) if id > 0],constraints=constraints)
         moves += [st_trans]
 
     ################################################
@@ -155,6 +171,14 @@ if __name__ == "__main__":
     steps = args.steps
     if print_every == 0:
         print_every = steps*2+equi*2
+
+
+    ################################################
+    # set turns to current dlk
+    tw = np.sum(bps.current_deforms[:,2]) / (2*np.pi)
+    wr = evals.writhe(chain.conf[:,:3,3],closed=False,num_ext=num_ext,ext_dir=force_dir)    
+    bps.angle_tracing_last_proposed_angle = tw + wr
+    bps.angle_tracing_last_current_angle  = tw + wr
 
     ###################################################################################
     # Equilibrate
@@ -208,39 +232,27 @@ if __name__ == "__main__":
     print('Main Run...')
     t1 = time.time()
     for step in range(1,steps+1):
+        
+        ###################################
+        # Moves
+        ###################################
         for move in moves:
             move.mc()
         
-        # if step % 200 == 0:
-        #     deforms = bps.current_deforms
-        #     argm = np.argmax(deforms,axis=0)
-        #     print(np.min(deforms,axis=0))
-        #     print(np.max(deforms,axis=0))
-        
+        ###################################
+        # Print
+        ###################################
         if step % print_every == 0:
             print('########################')
             print(f"Step {step}: ")
             
-            if args.fix_link:
+            if args.print_link:
                 tw = np.sum(bps.current_deforms[:,2]) / (2*np.pi)
-                
-                num_append = 10
-                conf = np.copy(chain.conf[:,:3,3])
-                pos = np.zeros((len(conf)+2*num_append,3))
-                pos[num_append:-num_append] = conf
-                disc_len = np.linalg.norm(conf[1]-conf[0])
-                for i in range(1,num_append+1):
-                    pos[num_append-i] = pos[num_append] - i*force_dir*disc_len
-                    pos[-num_append-1+i] = pos[-num_append-1] + i*force_dir*disc_len
-
-                # print(pos)
-                wm = writhemap(pos)[:-1,:-1]
-                wr = np.sum(wm)
-                
+                wr = evals.writhe(chain.conf[:,:3,3],closed=False,num_ext=num_ext,ext_dir=force_dir)            
                 print(f'tw = {tw}')
                 print(f'wr = {wr}')
                 print(f'lk = {tw+wr}')
-            else:
+            if not args.fix_link:
                 print('first turns = %.3f'%(bps.get_angle_first()/(2*np.pi)))
                 print('last turns  = %.3f'%(bps.get_angle_last()/(2*np.pi)))
             
@@ -255,6 +267,9 @@ if __name__ == "__main__":
             for move in set(moves):
                 print(f"{move.name}:{' '*(maxlen-len(move.name))} %.3f"%(move.acceptance_rate()))   
 
+        ###################################
+        # Dump FOMT
+        ###################################
         if fomtn > 0 and step % fomtn == 0:
             # end rotation
             rot = bps.get_angle_last()/(2*np.pi)
@@ -265,6 +280,10 @@ if __name__ == "__main__":
             
             # store as string
             dumpstr = '%.4f %.4f %.4f'%(z,rot,tw)
+            if args.include_writhe:
+                wr = evals.writhe(chain.conf[:,:3,3],closed=False,num_ext=num_ext,ext_dir=force_dir)
+                dumpstr = dumpstr + ' %.4f'%wr
+            
             fomt_data.append(dumpstr)
             # print to file
             if len(fomt_data) == stored_fomt:
@@ -273,6 +292,9 @@ if __name__ == "__main__":
                         f.write(d+'\n')
                 fomt_data = []
         
+        ###################################
+        # Dump XYZ
+        ###################################
         if xyzn > 0 and step % xyzn == 0:
             confs = [chain.conf[:,:3,3]]
             types = [x for x in seq]

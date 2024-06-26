@@ -69,7 +69,6 @@ class MCStep(ABC):
             raise NotImplementedError(
                 f"Generation of full trial configurations has not been implemented yet."
             )
-
         else:
             # these conditions can probably be improved!
             accepted = self.mc_move()
@@ -87,9 +86,25 @@ class MCStep(ABC):
                 self.count_accept += 1
                 if self.backup_required or self.ev_active:
                     self.chain.set_backup()
-              
+                      
         self.bpstep.set_move(accepted)
         
+        # diff = np.abs(np.sum(self.bpstep.current_last_triad[:3,:3]-self.chain.conf[-1,:3,:3]))
+        # if diff > 1e-10:
+        #     print('change of last triad not detected!')
+        #     print(self.bpstep.current_last_triad[:3,:3])
+        #     print(self.chain.conf[-1,:3,:3])
+        #     print('proposed:')
+        #     print(self.bpstep.proposed_last_triad)
+        #     print(diff)
+        #     print(f'accepted = {accepted}')
+        #     print(self.name)
+        #     if self.name == 'Pivot':
+        #         print(f'{self.preserve_termini=}')
+        #     for moved in self.moved_intervals:
+        #         print(moved)
+        #     sys.exit()
+            
         # call chain maintainance methods
         # conf = np.copy(self.chain.conf)
         if self.chain.check_realign():

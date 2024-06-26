@@ -130,15 +130,6 @@ class BPStep(ABC):
             # print('twist not conserved')
             return 1e10
         
-        # from time import time 
-        
-        # t1 = time()
-        # for i in range(100000):
-        #     self._eval_delta_E()
-        # t2 = time()
-        
-        # print(f'dt = {t2-t1}')
-        # sys.exit()
         dE = self._eval_delta_E()
         dE += self.eval_delta_E_stretching_force()
         return dE
@@ -179,7 +170,8 @@ class BPStep(ABC):
         if self.first_triad_changed:
             self._set_move_first(accept)
         if self.last_triad_changed:
-            self._set_move_last(accept)            
+            self._set_move_last(accept) 
+                   
         self.move_pending = False
                       
     #########################################################################################
@@ -245,7 +237,7 @@ class BPStep(ABC):
             return
         # self.termini_changed = True
         self.first_triad_changed = True
-        self.proposed_first_triad = first_triad
+        self.proposed_first_triad = np.copy(first_triad)
         self._propose_angle_first()
         
     def propose_move_last(self, last_triad: np.ndarray) -> None:
@@ -253,16 +245,16 @@ class BPStep(ABC):
             return
         # self.termini_changed = True
         self.last_triad_changed = True
-        self.proposed_last_triad = last_triad
+        self.proposed_last_triad = np.copy(last_triad)
         self._propose_angle_last()
         
     def _set_move_first(self,accept: bool=True) -> None:
         if not self.first_triad_changed:
             return
         if accept:
-            self.current_first_triad = self.proposed_first_triad
+            self.current_first_triad = np.copy(self.proposed_first_triad)
         else:
-            self.proposed_first_triad = self.current_first_triad  
+            self.proposed_first_triad = np.copy(self.current_first_triad)
         self._set_move_angle_first(accept)
             
         self.first_triad_changed = False 
@@ -271,18 +263,18 @@ class BPStep(ABC):
         if not self.last_triad_changed:
             return
         if accept:
-            self.current_last_triad = self.proposed_last_triad
+            self.current_last_triad = np.copy(self.proposed_last_triad)
         else:
-            self.proposed_last_triad = self.current_last_triad
+            self.proposed_last_triad = np.copy(self.current_last_triad)
         self._set_move_angle_last(accept)
         self.last_triad_changed = False 
     
     def trace_termini(self) -> None:
         self.trace_termini_active = True
-        self.current_first_triad = self.chain.conf[0]
-        self.current_last_triad  = self.chain.conf[-1]
-        self.proposed_first_triad = self.chain.conf[0]
-        self.proposed_last_triad  = self.chain.conf[-1]
+        self.current_first_triad = np.copy(self.chain.conf[0])
+        self.current_last_triad  = np.copy(self.chain.conf[-1])
+        self.proposed_first_triad = np.copy(self.chain.conf[0])
+        self.proposed_last_triad  = np.copy(self.chain.conf[-1])
         # self.termini_changed = False
         self.first_triad_changed = False
         self.last_triad_changed = False
@@ -317,13 +309,6 @@ class BPStep(ABC):
         dOm = so3.rotmat2euler(self.current_last_triad[:3,:3].T @ self.proposed_last_triad[:3,:3])
         # kill if tangent has changed
         if np.abs(dOm[0]) > 1e-10 or np.abs(dOm[1]) > 1e-10:
-            np.set_printoptions(linewidth=250, precision=16, suppress=True)
-            print(dOm)
-            print('current')
-            print(self.current_last_triad)
-            print('proposed')
-            print(self.proposed_last_triad)
-            
             raise ValueError(f'BPStep._propose_angle_last: tangent of last triad has changed, while tracing the rotation angle (specified by the rotation around the tangent). Perhaps you are using a move that does not preserve the orientation of the last tangent.')
         self.angle_tracing_last_proposed_angle = self.angle_tracing_last_current_angle + dOm[2]
         return dOm[2]

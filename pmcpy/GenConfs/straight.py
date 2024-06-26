@@ -1,6 +1,7 @@
 from typing import Any, Callable, Dict, List, Tuple
 import numpy as np
 from ..SO3 import so3
+import sys
 
 def gen_straight(gs: np.ndarray,dlk: float = 0) -> np.ndarray:
     if len(gs.shape) == 1:
