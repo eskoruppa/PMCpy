@@ -8,7 +8,6 @@ from ..BPStep.BPS_RBP import RBP
 from ..BPStep.BPStep import BPStep
 from ..chain import Chain
 
-
 def init_bps(
     model: str, chain: Chain, sequence: str, closed: bool = False, temp: float = 300
 ):

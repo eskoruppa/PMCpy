@@ -23,7 +23,9 @@ from ..MCStep.pivot import Pivot
 from ..MCStep.singletriad import SingleTriad
 from ..SO3 import so3
 from .model_selection import init_bps
-
+from ..ExVol.EVBeads import EVBeads
+from ..BPStep.BPS_LRBP import LRBP
+from ..BPStep.RBPStiff import GenStiffness
 
 def equilibrate(
     triads: np.ndarray,
@@ -34,7 +36,6 @@ def equilibrate(
     fixed: List[int] = [],
     temp: float = 300,
     num_cycles: int = None,
-    # fixed_positions: List[int] = None,
     exvol_rad: float = 0,
     model: str = "lankas",
     dump_every: int = None,
@@ -65,19 +66,75 @@ def equilibrate(
         - assess convergence of energy
     """
 
+    ################################
+    # FIX THIS
+
     exvol_active = False
     keep_backup = False
-    exvol = None
     if exvol_rad > 0:
-        exvol_active = True
-        keep_backup = True
-        print("Warning: Excluded volume interactions not yet implemented!")
+        keep_backup=True
+        exvol_active=True
+        
+
+    ################################
+
+
+    # # set excluded volume
+    # evdist = args.evdist
+    # check_crossings=True
+    # if evdist > 0:
+    #     print('####################################')
+    #     print('Initiating Excluded Volume...')
+    #     avgdist = np.mean(np.linalg.norm(gs[:,3:],axis=1))
+    #     maxdist = 0.46
+    #     maxdist = np.min([1.5*avgdist,evdist])
+    #     EV = EVBeads(chain,ev_distance=evdist,max_distance=maxdist,check_crossings=check_crossings)
+    # else:
+    #     EV = None
+
+
 
     #############################
     # init configuration chain and energy
     conf = se3_triads(triads, positions)
     chain = Chain(conf, closed=closed, keep_backup=keep_backup)
-    bps = init_bps(model, chain, sequence, closed=closed, temp=temp)
+    
+    
+    
+    check_crossings=True
+    exvol = None
+    if exvol_active:
+        evdist = exvol_rad * 2
+        # exvol_active = True
+        keep_backup = True
+        print('####################################')
+        print('Initiating Excluded Volume...')
+        avgdist = np.mean(np.linalg.norm(positions[1:]-positions[:-1],axis=1))
+        maxdist = 0.46
+        maxdist = np.min([1.5*avgdist,evdist])
+        exvol = EVBeads(chain,ev_distance=evdist,max_distance=maxdist,check_crossings=check_crossings)
+        # print("Warning: Excluded volume interactions not yet implemented!")
+    
+    
+    # if closed:
+    #     seq = sequence + sequence[0]
+    # else:
+    #     seq = str(sequence)  
+    # genstiff = GenStiffness(method='md')
+    # stiff,gs = genstiff.gen_params(seq, use_group = True, sparse = True)
+    
+    # print(stiff.shape)
+    # print(conf.shape)
+    # sys.exit()
+    
+    # ncoup = 0
+    # bps = RBP(chain,seq,gs,stiff,ncoup,closed=closed,static_group=True)
+    
+    specs = {"method": "MD", "gs_key": "group_gs", "stiff_key": "group_stiff"}
+    bps = LRBP(chain, sequence, specs, closed=closed, static_group=True, temp=temp)
+    
+    
+    # bps = init_bps(model, chain, sequence, closed=closed, temp=temp)
     N = len(conf)
 
     #############################
@@ -242,7 +299,7 @@ def equilibrate(
         "positions": chain.conf[:, :3, 3],
         "triads": chain.conf[:, :3, :3],
         "elastic": bps.get_total_energy(),
-        "confs": confs,
+        "confs":    confs,
     }
     return out
 
@@ -250,21 +307,133 @@ def equilibrate(
 if __name__ == "__main__":
     np.set_printoptions(linewidth=250, precision=3, suppress=True)
 
-    npb = 25
-    closed = False
+    # npb = 25
+    # closed = False
+    # endpoints_fixed = False
+    # fixed = []
+    # temp = 300
+
+    # conf = np.zeros((npb, 4, 4))
+    # gs = np.array([0, 0, 0.6, 0, 0, 0.34])
+    # g = so3.se3_euler2rotmat(gs)
+    # conf[0] = np.eye(4)
+    # for i in range(1, npb):
+    #     g = so3.se3_euler2rotmat(gs + np.random.normal(0, 0.1, 6))
+    #     conf[i] = conf[i - 1] @ g
+
+    # seq = "".join(["ATCG"[np.random.randint(4)] for i in range(npb)])
+
+    # triads = conf[:, :3, :3]
+    # pos = conf[:, :3, 3]
+
+    # print("first")
+    # out = equilibrate(
+    #     triads,
+    #     pos,
+    #     seq,
+    #     closed=False,
+    #     endpoints_fixed=False,
+    #     fixed=[],
+    #     temp=100000,
+    #     num_cycles=100,
+    # )
+
+    # # fixed = [10,20,30,70]
+    # # fixed_pos1 = np.copy(out['positions'][fixed])
+
+    # print("second")
+    # out = equilibrate(
+    #     out["triads"],
+    #     out["positions"],
+    #     seq,
+    #     closed=closed,
+    #     endpoints_fixed=endpoints_fixed,
+    #     fixed=fixed,
+    #     temp=300,
+    # )
+
+    # # fixed_pos2 = np.copy(out['positions'][fixed])
+    # # print(fixed_pos2-fixed_pos1)
+
+    # from ..Dumps.xyz import write_xyz
+
+    # types = ["C" for i in range(len(conf))]
+    # data = {"pos": out["confs"], "types": types}
+    # write_xyz("test_equi.xyz", data)
+    
+    
+    # import matplotlib.pyplot as plt
+    # def plot(pos, 
+    #     triads):
+    
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111,projection='3d')
+    #     ax = plt.gca(projection='3d')
+    #     for position, frame in zip(pos,triads):
+    #         right, up, forward = frame.T
+            
+    #         ax.quiver(*position,*right,length=0.2,color='g')
+    #         ax.quiver(*position,*up,length=0.2,color='b')
+    #         ax.quiver(*position,*forward,length=0.2,color='r')
+        
+    #     ax.plot(*pos.T,color='black',label='Control Points',lw=1)
+        
+    #     com = np.mean(pos,axis=0)
+    #     maxrge = np.max([np.max(pos[:,i])-np.min(pos[:,i]) for i in range(3)])
+    #     margin = maxrge*0.01
+    #     halfrge = maxrge*0.5+margin
+    #     rges = []
+    #     for i in range(3):
+    #         rges.append([com[i]-halfrge,com[i]+halfrge])
+    #     for x in range(2):
+    #         for y in range(2):
+    #             for z in range(2):
+    #                 ax.scatter([rges[0][x]],[rges[1][y]],[rges[2][z]],alpha=0.01)
+    #     ax.set_xlabel('X')
+    #     ax.set_ylabel('Y')
+    #     ax.set_zlabel('Z')
+    #     ax.legend()
+    #     plt.show()
+        
+    # plot(out['positions'],out['triads'])
+    
+    
+    def gen_circular(nbp: int, lk: float, disc_len: float):
+        conf = np.zeros((nbp,4,4))
+        conf[:,3,3] = 1
+        dtheta = 2*np.pi / nbp
+        conf[:,:3,3] = [[np.cos(i*dtheta),np.sin(i*dtheta),0] for i in range(nbp)]
+        conf[:,:3,3] *= disc_len / np.linalg.norm(conf[1,:3,3]-conf[0,:3,3])
+        for i in range(nbp):
+            t = conf[(i+1)%nbp,:3,3] - conf[i,:3,3] 
+            t = t / np.linalg.norm(t)
+            b = np.array([0,0,1])
+            n = np.cross(b,t)
+            conf[i,:3,0] = n
+            conf[i,:3,1] = b
+            conf[i,:3,2] = t
+        
+        thpbp = lk*2*np.pi / nbp
+        for i in range(nbp):
+            theta = i*thpbp
+            R = so3.euler2rotmat(np.array([0,0,theta]))
+            conf[i,:3,:3] = conf[i,:3,:3] @ R 
+        # plot(conf[:,:3,3],conf[:,:3,:3]=
+        return conf 
+    
     endpoints_fixed = False
     fixed = []
+    
+    nbp = 300
+    dlk = 5
+    disc_len = 0.34
+    closed = True
     temp = 300
-
-    conf = np.zeros((npb, 4, 4))
-    gs = np.array([0, 0, 0.6, 0, 0, 0.34])
-    g = so3.se3_euler2rotmat(gs)
-    conf[0] = np.eye(4)
-    for i in range(1, npb):
-        g = so3.se3_euler2rotmat(gs + np.random.normal(0, 0.1, 6))
-        conf[i] = conf[i - 1] @ g
-
-    seq = "".join(["ATCG"[np.random.randint(4)] for i in range(npb)])
+    exvol_rad = 2
+    
+    lk = nbp//10.5 + dlk    
+    conf = gen_circular(nbp,lk,disc_len)
+    seq = "".join(["ATCG"[np.random.randint(4)] for i in range(nbp)])
 
     triads = conf[:, :3, :3]
     pos = conf[:, :3, 3]
@@ -274,26 +443,28 @@ if __name__ == "__main__":
         triads,
         pos,
         seq,
-        closed=False,
+        closed=closed,
+        exvol_rad=exvol_rad,
         endpoints_fixed=False,
         fixed=[],
-        temp=100000,
-        num_cycles=100,
+        temp=300,
+        num_cycles=25000,
+        dump_every=100
     )
 
     # fixed = [10,20,30,70]
     # fixed_pos1 = np.copy(out['positions'][fixed])
 
-    print("second")
-    out = equilibrate(
-        out["triads"],
-        out["positions"],
-        seq,
-        closed=closed,
-        endpoints_fixed=endpoints_fixed,
-        fixed=fixed,
-        temp=300,
-    )
+    # print("second")
+    # out = equilibrate(
+    #     out["triads"],
+    #     out["positions"],
+    #     seq,
+    #     closed=closed,
+    #     endpoints_fixed=endpoints_fixed,
+    #     fixed=fixed,
+    #     temp=300,
+    # )
 
     # fixed_pos2 = np.copy(out['positions'][fixed])
     # print(fixed_pos2-fixed_pos1)
@@ -305,41 +476,7 @@ if __name__ == "__main__":
     write_xyz("test_equi.xyz", data)
     
     
-    import matplotlib.pyplot as plt
-    def plot(pos, 
-        triads):
-    
-        fig = plt.figure()
-        ax = fig.add_subplot(111,projection='3d')
-        ax = plt.gca(projection='3d')
-        for position, frame in zip(pos,triads):
-            right, up, forward = frame.T
-            
-            ax.quiver(*position,*right,length=0.2,color='g')
-            ax.quiver(*position,*up,length=0.2,color='b')
-            ax.quiver(*position,*forward,length=0.2,color='r')
-        
-        ax.plot(*pos.T,color='black',label='Control Points',lw=1)
-        
-        com = np.mean(pos,axis=0)
-        maxrge = np.max([np.max(pos[:,i])-np.min(pos[:,i]) for i in range(3)])
-        margin = maxrge*0.01
-        halfrge = maxrge*0.5+margin
-        rges = []
-        for i in range(3):
-            rges.append([com[i]-halfrge,com[i]+halfrge])
-        for x in range(2):
-            for y in range(2):
-                for z in range(2):
-                    ax.scatter([rges[0][x]],[rges[1][y]],[rges[2][z]],alpha=0.01)
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        ax.legend()
-        plt.show()
-        
-    plot(out['positions'],out['triads'])
-
-
-
-
+    taus = np.zeros((len(out["positions"]),4,4))
+    taus[:,:3,:3] = out["triads"]
+    taus[:,3,:3] = out["positions"]
+    np.save('taus.npy',taus)
