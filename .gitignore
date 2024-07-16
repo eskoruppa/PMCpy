@@ -18,7 +18,6 @@
 
 # ignore run directories
 **Run/
-**run/
 **RUN/
 **srun.py
 **srun_*.sh
