@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Any, Callable, Dict, List, Tuple
 import numpy as np
+import warnings
 
 try:
     from numba import jit
@@ -26,6 +27,7 @@ from .model_selection import init_bps
 from ..ExVol.EVBeads import EVBeads
 from ..BPStep.BPS_LRBP import LRBP
 from ..BPStep.RBPStiff import GenStiffness
+
 
 def equilibrate(
     triads: np.ndarray,
@@ -65,6 +67,12 @@ def equilibrate(
     TODO:
         - assess convergence of energy
     """
+    
+    warnings.warn(
+        "This function is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2
+    )
 
     ################################
     # FIX THIS

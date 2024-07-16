@@ -5,8 +5,8 @@ from typing import Any, Callable, Dict, List, Tuple
 import numpy as np
 
 from ..BPStep.BPS_RBP import RBP
-from ..BPStep.BPStep import BPStep
 from ..chain import Chain
+# from ..BPStep.BPStep import BPStep
 
 def init_bps(
     model: str, chain: Chain, sequence: str, closed: bool = False, temp: float = 300
