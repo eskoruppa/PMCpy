@@ -105,7 +105,7 @@ class EVBeads(ExVol):
         print(f" Excluded Volume Beads: ")
         print(f"   number of EV beads: {self.num_EV}")
         print(f"   bp per EV bead:     {self.num_bp_per_EV}")
-        print(f"   Effective size:     {self.eff_size_EV_bead}")
+        print(f"   Effective size:     {np.round(self.eff_size_EV_bead,decimals=3)}")
         print(f"   Exclusion distance: {self.EV_dist}")
         print("######################################")
 
