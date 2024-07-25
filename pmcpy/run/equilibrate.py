@@ -248,7 +248,7 @@ def equilibrate(
     #############################
     # simulation loop
     confs = []
-    confs.append(np.copy(chain.conf[:, :3, 3]))
+    confs.append(np.copy(chain.conf))
     energies = []
     energies.append(bps.get_total_energy())
 
@@ -260,7 +260,7 @@ def equilibrate(
             if cyc % 10 == 0:
                 energies.append(bps.get_total_energy())
             if dump_every is not None and cyc % dump_every == 0:
-                confs.append(np.copy(chain.conf[:, :3, 3]))
+                confs.append(np.copy(chain.conf))
             if cyc % 1000 == 0:
                 print(f"cycle {cyc}: ")
 
@@ -271,7 +271,7 @@ def equilibrate(
             if cyc % cycles_per_eval == 0:
                 energies.append(bps.get_total_energy())
             if dump_every is not None and cyc % dump_every == 0:
-                confs.append(np.copy(chain.conf[:, :3, 3]))
+                confs.append(np.copy(chain.conf))
 
         Em1 = np.mean(energies[:evals_per_average])
         Em2 = np.mean(energies[evals_per_average:])
@@ -288,7 +288,7 @@ def equilibrate(
                     for move in moves:
                         move.mc()
                     if cyc % 100 == 0:
-                        confs.append(np.copy(chain.conf[:, :3, 3]))
+                        confs.append(np.copy(chain.conf))
                 energies.append(bps.get_total_energy())
 
             Em1 = Em2
@@ -480,7 +480,7 @@ if __name__ == "__main__":
     from ..Dumps.xyz import write_xyz
 
     types = ["C" for i in range(len(conf))]
-    data = {"pos": out["confs"], "types": types}
+    data = {"pos": out["confs"][:, :3, 3], "types": types}
     write_xyz("test_equi.xyz", data)
     
     
