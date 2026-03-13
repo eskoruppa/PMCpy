@@ -1,0 +1,21 @@
+[project]
+name = "PMCpy"
+version = "0.1.0"
+description = "ADD DESCRIPTION"
+authors = [
+    {name = "Enrico Skoruppa", email = "enrico.skoruppa@gmail.com"},
+]
+dependencies = [
+    "setuptools>=75.1.0",
+]
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "GNU2"}
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.pdm]
+distribution = true

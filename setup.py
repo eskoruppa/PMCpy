@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="<REPO NAME>",
+    name="PMCpy",
     version="0.0.1",
     description="ADD DESCRIPTION",
     url="https://github.com/eskoruppa/<REPO NAME>",
