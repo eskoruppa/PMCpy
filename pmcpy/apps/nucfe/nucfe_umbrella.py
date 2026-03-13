@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 
-from ...aux import params2conf
+from ...utils import params2conf
 from ...BPStep.BPS_RBP import RBP
 from ...BPStep.BPStep import BPStep
 from ...chain import Chain
@@ -45,9 +45,9 @@ def mutation_sampling(moves, bps_ensemble, curid, total_ids, steps):
 
     Ecurr = bps_ensemble[curid].get_total_energy()
 
-    new_id = np.random.randint(total_ids)
-    # change = np.random.randint(0,2)*2-1
-    # new_id = (curid + change) % total_ids
+    # new_id = np.random.randint(total_ids)
+    change = np.random.randint(0,2)*2-1
+    new_id = (curid + change) % total_ids
 
     bps_ensemble[new_id].chain = bps_ensemble[curid].chain
     bps_ensemble[new_id].init_conf()
@@ -65,45 +65,21 @@ def mutation_sampling(moves, bps_ensemble, curid, total_ids, steps):
 
 
 if __name__ == "__main__":
+    
+    np.set_printoptions(linewidth=250, precision=3, suppress=True)
+    
     outfn = os.path.join(os.path.dirname(__file__), "out")
     seqfn = os.path.join(os.path.dirname(__file__), "seqs")
-
-    np.set_printoptions(linewidth=250, precision=3, suppress=True)
-
     triadfn = os.path.join(os.path.dirname(__file__), "State/Nucleosome.state")
+
     conf = read_nucleosome_triads(triadfn)
-
+    
     midstep_ids = [
-        2,
-        6,
-        14,
-        17,
-        24,
-        29,
-        34,
-        38,
-        45,
-        49,
-        55,
-        59,
-        65,
-        69,
-        76,
-        80,
-        86,
-        90,
-        96,
-        100,
-        107,
-        111,
-        116,
-        121,
-        128,
-        131,
-        139,
-        143,
+        2, 6, 14, 17, 24, 29, 34, 38, 45, 49, 55, 59, 
+        65, 69, 76, 80, 86, 90, 96, 100, 107, 111, 116, 
+        121, 128, 131, 139, 143
     ]
-
+    
     misteps = calculate_midstep_triads(midstep_ids, conf)
 
     closed = False

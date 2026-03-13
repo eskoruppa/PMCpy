@@ -11,7 +11,7 @@ from ..Constraints.Constraint import Constraint
 from ..pyConDec.pycondec import cond_jit
 from ..SO3 import so3
 from .mcstep import MCStep
-from ..aux import random_unitsphere
+from ..utils import random_unitsphere
 
 
 class DoublePivot(MCStep):
