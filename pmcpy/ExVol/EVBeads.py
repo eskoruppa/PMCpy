@@ -742,7 +742,7 @@ class EVBeads(ExVol):
         return overlap   
     
      
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def check_overlap_numba(
     bp_pos: np.ndarray,
     EV_beads: np.ndarray,

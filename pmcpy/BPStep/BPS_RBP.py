@@ -181,7 +181,7 @@ class RBP(BPStep):
 
 from ..pyConDec.pycondec import cond_jit
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def rbp_numba_eval_delta_E(
     proposed_ids: np.ndarray, 
     table_proposed_energies: np.ndarray, 

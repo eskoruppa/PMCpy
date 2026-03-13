@@ -667,7 +667,7 @@ class EVBeads(ExVol):
 ########## Double Move ##################################################################
 #########################################################################################
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def doubleMove(id1: int, id2: int, bp_pos: np.ndarray, bp_pos_backup: np.ndarray, EV_dist: float) -> float:
     p1  = bp_pos_backup[id1]
     p1p = bp_pos[id1]
@@ -703,7 +703,7 @@ def doubleMove(id1: int, id2: int, bp_pos: np.ndarray, bp_pos_backup: np.ndarray
 ########## Single Move ##################################################################
 #########################################################################################
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def singleMove(id1: int, id2: int, bp_pos: np.ndarray, bp_pos_backup: np.ndarray)-> float:
     p1  = bp_pos_backup[id1]
     p1p = bp_pos[id1]

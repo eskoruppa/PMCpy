@@ -57,7 +57,7 @@ class RepulsionPlane(Constraint):
         #     return check_interval(pos,interval[0],interval[1],self.normal,lower=lower,upper=upper)  
         # return True        
         
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def check_interval(pos: np.ndarray, idfrom: int, idto: int, normal: np.ndarray, lower: float = None, upper: float = None):
     if idfrom == 0:
         idfrom = 1

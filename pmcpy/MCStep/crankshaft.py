@@ -197,7 +197,7 @@ class Crankshaft(MCStep):
     #########################################################################################
 
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def segment_rotation(
     conf: np.ndarray,
     Rlab: np.ndarray,

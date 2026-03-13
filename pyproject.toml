@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pmcpy"
+version = "0.0.1"
+description = "Polymer Monte Carlo simulations of sequence-dependent coarse-grained double-stranded DNA"
+readme = "README.md"
+license = { text = "GPL-2.0" }
+authors = [
+    { name = "Enrico Skoruppa", email = "enrico.skoruppa@gmail.com" }
+]
+requires-python = ">=3.8"
+keywords = ["DNA", "Monte Carlo", "coarse-grained", "biophysics", "polymer"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+]
+
+[project.optional-dependencies]
+numba = ["numba"]
+plot  = ["matplotlib"]
+all   = ["numba", "matplotlib"]
+
+[project.urls]
+Repository = "https://github.com/eskoruppa/PMCpy"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pmcpy*"]

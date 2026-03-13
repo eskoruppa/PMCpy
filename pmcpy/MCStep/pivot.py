@@ -235,7 +235,7 @@ class Pivot(MCStep):
             return True
 
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def back_tail_rotation(
     conf: np.ndarray,
     G: np.ndarray,
@@ -251,7 +251,7 @@ def back_tail_rotation(
     return conf
 
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def front_tail_rotation(
     conf: np.ndarray,
     G: np.ndarray,

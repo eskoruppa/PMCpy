@@ -8,7 +8,7 @@ from .pyConDec.pycondec import cond_jit
 from .SO3 import so3
 
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def random_unitsphere():
     a = 2 * np.pi * np.random.uniform()
     x = np.random.uniform()
@@ -20,7 +20,7 @@ def random_unitsphere():
     vec[1] *= np.sin(a)
     return vec
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def params2conf(params: np.ndarray) -> np.ndarray:
     conf = np.zeros((len(params), 4, 4), dtype=np.float64)
     conf[0] = np.eye(4)
@@ -28,17 +28,17 @@ def params2conf(params: np.ndarray) -> np.ndarray:
         conf[i] = conf[i - 1] @ so3.se3_euler2rotmat(params[i])
     return conf
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def triad_realign(triad: np.ndarray) -> np.ndarray:
     triad = np.copy(triad)
     e1 = triad[:,0]
     e2 = triad[:,1]
     e3 = triad[:,2]
-    e3 = e3 / np.linalg.norm(e3, dtype=np.float64)
+    e3 = e3 / np.linalg.norm(e3)
     e2 = e2 - np.dot(e3,e2)*e3
-    e2 = e2 / np.linalg.norm(e2, dtype=np.float64)
+    e2 = e2 / np.linalg.norm(e2)
     e1 = np.cross(e2,e3)
-    e1 = e1 / np.linalg.norm(e1, dtype=np.float64)
+    e1 = e1 / np.linalg.norm(e1)
     triad = np.empty((3,3), dtype=np.float64)
     triad[:,0] = e1
     triad[:,1] = e2

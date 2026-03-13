@@ -54,7 +54,7 @@ run = pmcpy.Run(
     pos,
     seq,
     closed=closed,
-    endpoints_fixed=True,
+    endpoints_fixed=False,
     fixed=[],
     temp=300,
     exvol_rad=exvol_rad,
@@ -62,14 +62,9 @@ run = pmcpy.Run(
     parameter_set='md'
 )
 
-out = run.equilibrate(equilibrate_writhe=True,dump_every=10)
+out = run.equilibrate(dump_every=10, plot_equi=True, min_evals=500)
 
-# from ..Dumps.xyz import write_xyz
-
-# print(out["confs"][:,:,:3,3].shape)
-
-# types = ["C" for i in range(len(conf))]
-# data = {"pos": out["confs"][:,:,:3,3], "types": types}
-# write_xyz("test_equi.xyz", data)
-
-
+print(out["confs"][:,:,:3,3].shape)
+types = ["C" for i in range(len(conf))]
+data = {"pos": out["confs"][:,:,:3,3], "types": types}
+pmcpy.write_xyz("test_equi.xyz", data)

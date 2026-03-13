@@ -11,7 +11,7 @@ from ..chain import Chain
 ########## Double Move ##################################################################
 #########################################################################################
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def doubleMove(id1: int, id2: int, bp_pos: np.ndarray, bp_pos_backup: np.ndarray, EV_dist: float) -> float:
     p1  = bp_pos_backup[id1]
     p1p = bp_pos[id1]
@@ -47,7 +47,7 @@ def doubleMove(id1: int, id2: int, bp_pos: np.ndarray, bp_pos_backup: np.ndarray
 ########## Single Move ##################################################################
 #########################################################################################
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def singleMove(id1: int, id2: int, bp_pos: np.ndarray, bp_pos_backup: np.ndarray)-> float:
     p1  = bp_pos_backup[id1]
     p1p = bp_pos[id1]
@@ -72,7 +72,7 @@ def singleMove(id1: int, id2: int, bp_pos: np.ndarray, bp_pos_backup: np.ndarray
 #########################################################################################
 
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def singleMove_intervals(
     A1: int, A2: int, B1: int, B2: int, closed: bool, 
     bp_pos: np.ndarray, bp_pos_backup: np.ndarray,
@@ -203,7 +203,7 @@ def singleMove_intervals(
     return True
 
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def doubleMove_intervals(
     A1: int, A2: int, B1: int, B2: int, closed: bool, 
     bp_pos: np.ndarray, bp_pos_backup: np.ndarray,
@@ -335,7 +335,7 @@ def doubleMove_intervals(
 ########## Current Max Distance #########################################################
 #########################################################################################
 
-@cond_jit 
+@cond_jit(nopython=True, cache=True)
 def largest_dist(    
     evpos: np.ndarray, 
     closed: bool,
@@ -347,7 +347,7 @@ def largest_dist(
             largest = dist
     return largest
 
-@cond_jit 
+@cond_jit(nopython=True, cache=True)
 def norms(vecs: np.ndarray) -> np.ndarray:
     dists = np.empty(len(vecs))
     for i in range(len(vecs)):

@@ -85,7 +85,7 @@ class TangentCorr:
         data[2] = -data[0]/np.log(data[1])
         return data
     
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def _tc_iter_single(tc: np.ndarray, utans: np.ndarray, mmax: int) -> np.ndarray:
     for i in range(len(utans)-1):
         for m in range(mmax):
@@ -96,7 +96,7 @@ def _tc_iter_single(tc: np.ndarray, utans: np.ndarray, mmax: int) -> np.ndarray:
             tc[m,1] += 1
     return tc
 
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def _tc_iter_multi(tc: np.ndarray, utans: np.ndarray, mmax: int) -> np.ndarray:
     for s in range(len(utans)):
         for i in range(len(utans[0])-1):
@@ -147,7 +147,7 @@ def tangent_correlators(tans: np.ndarray, mmax: int=None, check_normalization: b
         mmax = tans.shape[-2]-1
     return _tangent_correlators(tans,mmax)
     
-@cond_jit
+@cond_jit(nopython=True, cache=True)
 def _tangent_correlators(tans: np.ndarray, mmax: int) -> np.ndarray:
     tancor = np.zeros(mmax)
     numcor = np.zeros(mmax)
