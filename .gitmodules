@@ -1,12 +1,12 @@
 [submodule "pmcpy/SO3"]
 	path = pmcpy/SO3
-	url = git@github.com:eskoruppa/SO3
+	url = https://github.com/eskoruppa/SO3
 [submodule "pmcpy/BPStep/RBPStiff"]
 	path = pmcpy/BPStep/RBPStiff
-	url = git@github.com:eskoruppa/RBPStiff
+	url = https://github.com/eskoruppa/RBPStiff
 [submodule "pmcpy/pyConDec"]
 	path = pmcpy/pyConDec
-	url = git@github.com:eskoruppa/pyConDec
+	url = https://github.com/eskoruppa/pyConDec
 [submodule "pmcpy/Evals/PyLk"]
 	path = pmcpy/Evals/PyLk
-	url = git@github.com:eskoruppa/PyLk
+	url = https://github.com/eskoruppa/PyLk
